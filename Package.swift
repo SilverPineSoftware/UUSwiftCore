@@ -25,6 +25,7 @@ let package = Package(
         .target(
             name: "UUSwiftCore",
             dependencies: [],
+			path: "UUSwiftCore"
 			exclude: ["UUSwift-Info.plist"]),
         .testTarget(
             name: "UUSwiftCoreTests",
