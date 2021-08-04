@@ -60,6 +60,7 @@
 		C5361B4526BA218F00EDA4AB /* Package.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		C5361B4626BA218F00EDA4AB /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		C5361B4726BA218F00EDA4AB /* LICENSE */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
+		C5361B4B26BA221600EDA4AB /* UUSwiftCore.podspec */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = UUSwiftCore.podspec; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -84,6 +85,7 @@
 		C5361B0526BA20E100EDA4AB = {
 			isa = PBXGroup;
 			children = (
+				C5361B4B26BA221600EDA4AB /* UUSwiftCore.podspec */,
 				C5361B4726BA218F00EDA4AB /* LICENSE */,
 				C5361B4526BA218F00EDA4AB /* Package.swift */,
 				C5361B4626BA218F00EDA4AB /* README.md */,
