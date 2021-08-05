@@ -24,6 +24,7 @@
 		C5361B4226BA213600EDA4AB /* UUObjectFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5361B3426BA213600EDA4AB /* UUObjectFactory.swift */; };
 		C5361B4326BA213600EDA4AB /* UUDebugLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5361B3526BA213600EDA4AB /* UUDebugLog.swift */; };
 		C5361B4426BA213600EDA4AB /* UUDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5361B3626BA213600EDA4AB /* UUDictionary.swift */; };
+		C574963926BB645100CECCC0 /* UUKeychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = C574963826BB645100CECCC0 /* UUKeychain.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -61,6 +62,7 @@
 		C5361B4626BA218F00EDA4AB /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		C5361B4726BA218F00EDA4AB /* LICENSE */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		C5361B4B26BA221600EDA4AB /* UUSwiftCore.podspec */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = UUSwiftCore.podspec; sourceTree = "<group>"; };
+		C574963826BB645100CECCC0 /* UUKeychain.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UUKeychain.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -114,6 +116,7 @@
 				C5361B3526BA213600EDA4AB /* UUDebugLog.swift */,
 				C5361B3626BA213600EDA4AB /* UUDictionary.swift */,
 				C5361B2B26BA213600EDA4AB /* UUJson.swift */,
+				C574963826BB645100CECCC0 /* UUKeychain.swift */,
 				C5361B2C26BA213600EDA4AB /* UULocalization.swift */,
 				C5361B3026BA213600EDA4AB /* UUObject.swift */,
 				C5361B3426BA213600EDA4AB /* UUObjectFactory.swift */,
@@ -255,6 +258,7 @@
 				C5361B3726BA213600EDA4AB /* UUSwiftCore.swift in Sources */,
 				C5361B3B26BA213600EDA4AB /* UUData.swift in Sources */,
 				C5361B4326BA213600EDA4AB /* UUDebugLog.swift in Sources */,
+				C574963926BB645100CECCC0 /* UUKeychain.swift in Sources */,
 				C5361B4126BA213600EDA4AB /* UURandom.swift in Sources */,
 				C5361B3A26BA213600EDA4AB /* UULocalization.swift in Sources */,
 				C5361B3826BA213600EDA4AB /* UUDate.swift in Sources */,
@@ -408,7 +412,7 @@
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.0.0;
+				CURRENT_PROJECT_VERSION = 1.0.3;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = SVT6H48N2C;
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -421,6 +425,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.silverpine.UUSwiftCore;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
@@ -435,7 +440,7 @@
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.0.0;
+				CURRENT_PROJECT_VERSION = 1.0.3;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = SVT6H48N2C;
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -448,6 +453,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.silverpine.UUSwiftCore;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
