@@ -2,8 +2,6 @@
 
 <img src = "https://jonhays.me/uploads/2020/86a3741f4b.jpg" alt="" />
 
-[![Platform](http://cocoapod-badges.herokuapp.com/p/UUSwiftCore/badge.png)](http://cocoadocs.org/docsets/UUSwift)
-[![Version](http://cocoapod-badges.herokuapp.com/v/UUSwiftCore/badge.png)](http://cocoadocs.org/docsets/UUSwift)
 [![Carthage compatible](https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat)](https://github.com/Carthage/Carthage)
 
 Useful Utilities is a collection of helper classes that extend or complement existing UIKit framework classes. This is the core library that extends native Foundation objects.
@@ -13,14 +11,6 @@ Useful Utilities is a collection of helper classes that extend or complement exi
 ### - Swift Package Manager
 
 UUSwiftCore has native SPM support.
-
-### - Cocoapods
-
-UUSwiftCore is available through [CocoaPods](http://cocoapods.org). To install it, simply add the following line to your `Podfile`:
-
-```
-pod 'UUSwiftCore'
-```
 
 ### - Carthage
 
@@ -34,7 +24,7 @@ Then, following the instructions for [integrating Carthage frameworks into your 
 
 ## Requirements
 
-This library requires a deployment target of iOS 8.0 or greater or OSX 10.10 or greater.
+This library requires a deployment target of iOS 10.0 or greater or OSX 10.10 or greater.
 UUSwiftCore currently supports Swift version 4.0 
 
 ## Contributing

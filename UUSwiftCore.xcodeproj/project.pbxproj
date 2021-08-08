@@ -7,8 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		C5361B1926BA20E200EDA4AB /* UUSwiftCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C5361B0F26BA20E200EDA4AB /* UUSwiftCore.framework */; };
-		C5361B1E26BA20E200EDA4AB /* UUSwiftCoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5361B1D26BA20E200EDA4AB /* UUSwiftCoreTests.swift */; };
 		C5361B2026BA20E200EDA4AB /* UUSwiftCore.h in Headers */ = {isa = PBXBuildFile; fileRef = C5361B1226BA20E200EDA4AB /* UUSwiftCore.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		C5361B3726BA213600EDA4AB /* UUSwiftCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5361B2926BA213600EDA4AB /* UUSwiftCore.swift */; };
 		C5361B3826BA213600EDA4AB /* UUDate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5361B2A26BA213600EDA4AB /* UUDate.swift */; };
@@ -27,23 +25,10 @@
 		C574963926BB645100CECCC0 /* UUKeychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = C574963826BB645100CECCC0 /* UUKeychain.swift */; };
 /* End PBXBuildFile section */
 
-/* Begin PBXContainerItemProxy section */
-		C5361B1A26BA20E200EDA4AB /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C5361B0626BA20E100EDA4AB /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = C5361B0E26BA20E200EDA4AB;
-			remoteInfo = UUSwiftCore;
-		};
-/* End PBXContainerItemProxy section */
-
 /* Begin PBXFileReference section */
 		C5361B0F26BA20E200EDA4AB /* UUSwiftCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = UUSwiftCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C5361B1226BA20E200EDA4AB /* UUSwiftCore.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = UUSwiftCore.h; sourceTree = "<group>"; };
 		C5361B1326BA20E200EDA4AB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		C5361B1826BA20E200EDA4AB /* UUSwiftCoreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = UUSwiftCoreTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		C5361B1D26BA20E200EDA4AB /* UUSwiftCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UUSwiftCoreTests.swift; sourceTree = "<group>"; };
-		C5361B1F26BA20E200EDA4AB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		C5361B2926BA213600EDA4AB /* UUSwiftCore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UUSwiftCore.swift; sourceTree = "<group>"; };
 		C5361B2A26BA213600EDA4AB /* UUDate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UUDate.swift; sourceTree = "<group>"; };
 		C5361B2B26BA213600EDA4AB /* UUJson.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UUJson.swift; sourceTree = "<group>"; };
@@ -61,7 +46,6 @@
 		C5361B4526BA218F00EDA4AB /* Package.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		C5361B4626BA218F00EDA4AB /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		C5361B4726BA218F00EDA4AB /* LICENSE */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
-		C5361B4B26BA221600EDA4AB /* UUSwiftCore.podspec */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = UUSwiftCore.podspec; sourceTree = "<group>"; };
 		C574963826BB645100CECCC0 /* UUKeychain.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UUKeychain.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -73,26 +57,16 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C5361B1526BA20E200EDA4AB /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C5361B1926BA20E200EDA4AB /* UUSwiftCore.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		C5361B0526BA20E100EDA4AB = {
 			isa = PBXGroup;
 			children = (
-				C5361B4B26BA221600EDA4AB /* UUSwiftCore.podspec */,
 				C5361B4726BA218F00EDA4AB /* LICENSE */,
 				C5361B4526BA218F00EDA4AB /* Package.swift */,
 				C5361B4626BA218F00EDA4AB /* README.md */,
 				C5361B1126BA20E200EDA4AB /* UUSwiftCore */,
-				C5361B1C26BA20E200EDA4AB /* UUSwiftCoreTests */,
 				C5361B1026BA20E200EDA4AB /* Products */,
 			);
 			sourceTree = "<group>";
@@ -101,7 +75,6 @@
 			isa = PBXGroup;
 			children = (
 				C5361B0F26BA20E200EDA4AB /* UUSwiftCore.framework */,
-				C5361B1826BA20E200EDA4AB /* UUSwiftCoreTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -128,15 +101,6 @@
 				C5361B1326BA20E200EDA4AB /* Info.plist */,
 			);
 			path = UUSwiftCore;
-			sourceTree = "<group>";
-		};
-		C5361B1C26BA20E200EDA4AB /* UUSwiftCoreTests */ = {
-			isa = PBXGroup;
-			children = (
-				C5361B1D26BA20E200EDA4AB /* UUSwiftCoreTests.swift */,
-				C5361B1F26BA20E200EDA4AB /* Info.plist */,
-			);
-			path = UUSwiftCoreTests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -171,24 +135,6 @@
 			productReference = C5361B0F26BA20E200EDA4AB /* UUSwiftCore.framework */;
 			productType = "com.apple.product-type.framework";
 		};
-		C5361B1726BA20E200EDA4AB /* UUSwiftCoreTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = C5361B2626BA20E200EDA4AB /* Build configuration list for PBXNativeTarget "UUSwiftCoreTests" */;
-			buildPhases = (
-				C5361B1426BA20E200EDA4AB /* Sources */,
-				C5361B1526BA20E200EDA4AB /* Frameworks */,
-				C5361B1626BA20E200EDA4AB /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				C5361B1B26BA20E200EDA4AB /* PBXTargetDependency */,
-			);
-			name = UUSwiftCoreTests;
-			productName = UUSwiftCoreTests;
-			productReference = C5361B1826BA20E200EDA4AB /* UUSwiftCoreTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -201,9 +147,6 @@
 					C5361B0E26BA20E200EDA4AB = {
 						CreatedOnToolsVersion = 12.5.1;
 						LastSwiftMigration = 1250;
-					};
-					C5361B1726BA20E200EDA4AB = {
-						CreatedOnToolsVersion = 12.5.1;
 					};
 				};
 			};
@@ -221,20 +164,12 @@
 			projectRoot = "";
 			targets = (
 				C5361B0E26BA20E200EDA4AB /* UUSwiftCore */,
-				C5361B1726BA20E200EDA4AB /* UUSwiftCoreTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		C5361B0D26BA20E200EDA4AB /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C5361B1626BA20E200EDA4AB /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -266,23 +201,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C5361B1426BA20E200EDA4AB /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C5361B1E26BA20E200EDA4AB /* UUSwiftCoreTests.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXTargetDependency section */
-		C5361B1B26BA20E200EDA4AB /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = C5361B0E26BA20E200EDA4AB /* UUSwiftCore */;
-			targetProxy = C5361B1A26BA20E200EDA4AB /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		C5361B2126BA20E200EDA4AB /* Debug */ = {
@@ -462,44 +381,6 @@
 			};
 			name = Release;
 		};
-		C5361B2726BA20E200EDA4AB /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = SVT6H48N2C;
-				INFOPLIST_FILE = UUSwiftCoreTests/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.silverpine.UUSwiftCoreTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		C5361B2826BA20E200EDA4AB /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = SVT6H48N2C;
-				INFOPLIST_FILE = UUSwiftCoreTests/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.silverpine.UUSwiftCoreTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -517,15 +398,6 @@
 			buildConfigurations = (
 				C5361B2426BA20E200EDA4AB /* Debug */,
 				C5361B2526BA20E200EDA4AB /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		C5361B2626BA20E200EDA4AB /* Build configuration list for PBXNativeTarget "UUSwiftCoreTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				C5361B2726BA20E200EDA4AB /* Debug */,
-				C5361B2826BA20E200EDA4AB /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
