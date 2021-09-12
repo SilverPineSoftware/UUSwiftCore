@@ -72,6 +72,49 @@ public class UUKeychain: NSObject
         {
         }
     }
+
+	public class func setPassword(_ password : String, forService service: String, forAccount account: String) {
+
+		let dictionary = NSMutableDictionary()
+		dictionary.setObject(kSecClassGenericPassword, forKey: kSecClass as NSString)
+		dictionary.setObject(service, forKey: kSecAttrService as NSString)
+		dictionary.setObject(account, forKey: kSecAttrAccount as NSString)
+		dictionary.setObject(password, forKey: kSecValueData as NSString)
+
+		var result: CFTypeRef? = nil
+		let status = SecItemAdd(dictionary, &result)
+
+		if (status == errSecSuccess && result != nil) {
+			print("Successfully saved")
+		}
+		else {
+			print("Could not save password")
+		}
+	}
+
+	public class func password(forService service: String, forAccount account: String) -> String? {
+
+		let dictionary = NSMutableDictionary()
+		dictionary.setObject(kSecClassGenericPassword, forKey: kSecClass as NSString)
+		dictionary.setObject(service, forKey: kSecAttrService as NSString)
+		dictionary.setObject(account, forKey: kSecAttrAccount as NSString)
+		dictionary.setObject(true, forKey: kSecReturnData as NSString)
+		dictionary.setObject(kSecMatchLimitOne, forKey: kSecMatchLimit as NSString)
+
+		var result: CFTypeRef? = nil
+		let status = SecItemCopyMatching(dictionary, &result)
+
+		if (status == errSecSuccess && result != nil)
+		{
+			if let data = result as? Data {
+				let string = String(data: data, encoding: .utf8)
+				return string
+			}
+		}
+
+		return nil
+
+	}
     
     public class func tryGetString(key: String) throws -> String?
     {
