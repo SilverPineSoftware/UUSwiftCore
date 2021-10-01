@@ -23,6 +23,7 @@
 		C5361B4326BA213600EDA4AB /* UUDebugLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5361B3526BA213600EDA4AB /* UUDebugLog.swift */; };
 		C5361B4426BA213600EDA4AB /* UUDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5361B3626BA213600EDA4AB /* UUDictionary.swift */; };
 		C574963926BB645100CECCC0 /* UUKeychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = C574963826BB645100CECCC0 /* UUKeychain.swift */; };
+		C5A9D14827078EE30042EAAB /* UUURL.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5A9D14727078EE30042EAAB /* UUURL.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -47,6 +48,7 @@
 		C5361B4626BA218F00EDA4AB /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		C5361B4726BA218F00EDA4AB /* LICENSE */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		C574963826BB645100CECCC0 /* UUKeychain.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UUKeychain.swift; sourceTree = "<group>"; };
+		C5A9D14727078EE30042EAAB /* UUURL.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UUURL.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -97,6 +99,7 @@
 				C5361B3126BA213600EDA4AB /* UUString.swift */,
 				C5361B2926BA213600EDA4AB /* UUSwiftCore.swift */,
 				C5361B3226BA213600EDA4AB /* UUThread.swift */,
+				C5A9D14727078EE30042EAAB /* UUURL.swift */,
 				C5361B1226BA20E200EDA4AB /* UUSwiftCore.h */,
 				C5361B1326BA20E200EDA4AB /* Info.plist */,
 			);
@@ -186,6 +189,7 @@
 				C5361B3F26BA213600EDA4AB /* UUString.swift in Sources */,
 				C5361B4426BA213600EDA4AB /* UUDictionary.swift in Sources */,
 				C5361B4226BA213600EDA4AB /* UUObjectFactory.swift in Sources */,
+				C5A9D14827078EE30042EAAB /* UUURL.swift in Sources */,
 				C5361B3D26BA213600EDA4AB /* UUDataCache.swift in Sources */,
 				C5361B3926BA213600EDA4AB /* UUJson.swift in Sources */,
 				C5361B3E26BA213600EDA4AB /* UUObject.swift in Sources */,
