@@ -86,7 +86,7 @@ public class UUThreadSafeArray<T:Equatable>: NSObject
     {
         return uuSynchronized(
         {
-            self.nativeObject.removeFirst()
+            return self.nativeObject.removeFirst()
         })
     }
     
@@ -94,7 +94,7 @@ public class UUThreadSafeArray<T:Equatable>: NSObject
     {
         return uuSynchronized(
         {
-            self.nativeObject.removeLast()
+            return self.nativeObject.removeLast()
         })
     }
     
@@ -102,7 +102,7 @@ public class UUThreadSafeArray<T:Equatable>: NSObject
     {
         return uuSynchronized(
         {
-            self.nativeObject.popLast()
+            return self.nativeObject.popLast()
         })
     }
 }
