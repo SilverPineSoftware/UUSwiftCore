@@ -44,7 +44,7 @@ public class UUThreadSafeArray<T:Equatable>: NSObject
 	
 	public func contains(_ element: T) -> Bool
 	{
-		uuSynchronized({
+		return uuSynchronized({
 			return self.nativeObject.firstIndex(of: element) != nil
 		})
 	}
