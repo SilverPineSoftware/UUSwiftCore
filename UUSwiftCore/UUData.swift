@@ -207,10 +207,7 @@ public extension Data
     
     mutating func uuAppend<T: FixedWidthInteger>(_ value: T)
     {
-        withUnsafePointer(to: value)
-        { ptr in
-            append(UnsafeBufferPointer(start: ptr, count: MemoryLayout<T>.size))
-        }
+        Swift.withUnsafeBytes(of: value, { append(contentsOf: $0) })
     }
     
     mutating func uuAppend(_ value: String?, encoding: String.Encoding = .utf8)

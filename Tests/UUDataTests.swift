@@ -410,4 +410,82 @@ class UUDataTests: XCTestCase
         do_uuStringAtIndex_test(bytes, index: 0, count: bytes.count, encoding: .ascii, expected: "0123456ABCD")
         do_uuStringAtIndex_test(bytes, index: 4, count: 5, encoding: .ascii, expected: "456AB")
     }
+    
+    // MARK: uuAppend(integers)
+    
+    private func do_uuAppendInteger_test<T: FixedWidthInteger>(_ existing: Data, data: T, expected: [UInt8])
+    {
+        var input = existing.uuData(at: 0, count: existing.count) // Make a copy
+        XCTAssertNotNil(input)
+        
+        let countBefore = input!.count
+        input!.uuAppend(data)
+        let countAfter = input!.count
+        
+        XCTAssertEqual(countAfter - countBefore, MemoryLayout<T>.size)
+        XCTAssertEqual(input!.uuBytes, expected)
+    }
+    
+    func test_uuAppendInteger()
+    {
+        let data = Data()
+        
+        do_uuAppendInteger_test(data, data: UInt8(22), expected: [ 22 ])
+        do_uuAppendInteger_test(data, data: UInt8(57), expected: [ 57 ])
+        do_uuAppendInteger_test(data, data: UInt8.min, expected: [ 0x00 ])
+        do_uuAppendInteger_test(data, data: UInt8.max, expected: [ 0xFF ])
+        
+        do_uuAppendInteger_test(data, data: UInt16(0), expected: [ 0, 0 ])
+        do_uuAppendInteger_test(data, data: UInt16(0x00FF), expected: [ 0xFF, 0x00 ])
+        do_uuAppendInteger_test(data, data: UInt16(0x00FF).bigEndian, expected: [ 0x00, 0xFF ])
+        do_uuAppendInteger_test(data, data: UInt16(57), expected: [ 57, 0x00 ])
+        do_uuAppendInteger_test(data, data: UInt16(0xABCD), expected: [ 0xCD, 0xAB ])
+        do_uuAppendInteger_test(data, data: UInt16.min, expected: [ 0x00, 0x00 ])
+        do_uuAppendInteger_test(data, data: UInt16.max, expected: [ 0xFF, 0xFF ])
+        
+        do_uuAppendInteger_test(data, data: UInt32(0), expected: [ 0, 0, 0, 0 ])
+        do_uuAppendInteger_test(data, data: UInt32(0x00FF), expected: [ 0xFF, 0x00, 0x00, 0x00 ])
+        do_uuAppendInteger_test(data, data: UInt32(0x00FF).bigEndian, expected: [ 0x00, 0x00, 0x00, 0xFF ])
+        do_uuAppendInteger_test(data, data: UInt32(57), expected: [ 57, 0x00, 0x00, 0x00 ])
+        do_uuAppendInteger_test(data, data: UInt32(0xABCD1234), expected: [ 0x34, 0x12, 0xCD, 0xAB ])
+        do_uuAppendInteger_test(data, data: UInt32.min, expected: [ 0x00, 0x00, 0x00, 0x00 ])
+        do_uuAppendInteger_test(data, data: UInt32.max, expected: [ 0xFF, 0xFF, 0xFF, 0xFF ])
+        
+        do_uuAppendInteger_test(data, data: UInt64(0), expected: [ 0, 0, 0, 0, 0, 0, 0, 0 ])
+        do_uuAppendInteger_test(data, data: UInt64(0x00FF), expected: [ 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ])
+        do_uuAppendInteger_test(data, data: UInt64(0x00FF).bigEndian, expected: [ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF ])
+        do_uuAppendInteger_test(data, data: UInt64(57), expected: [ 57, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ])
+        do_uuAppendInteger_test(data, data: UInt64(0xABCD1234), expected: [ 0x34, 0x12, 0xCD, 0xAB, 0x00, 0x00, 0x00, 0x00 ])
+        do_uuAppendInteger_test(data, data: UInt64.min, expected: [ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ])
+        do_uuAppendInteger_test(data, data: UInt64.max, expected: [ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF ])
+        
+        do_uuAppendInteger_test(data, data: Int8(22), expected: [ 22 ])
+        do_uuAppendInteger_test(data, data: Int8(57), expected: [ 57 ])
+        do_uuAppendInteger_test(data, data: Int8.min, expected: [ 0x80 ])
+        do_uuAppendInteger_test(data, data: Int8.max, expected: [ 0x7F ])
+        
+        do_uuAppendInteger_test(data, data: Int16(0), expected: [ 0, 0 ])
+        do_uuAppendInteger_test(data, data: Int16(0x00FF), expected: [ 0xFF, 0x00 ])
+        do_uuAppendInteger_test(data, data: Int16(0x00FF).bigEndian, expected: [ 0x00, 0xFF ])
+        do_uuAppendInteger_test(data, data: Int16(57), expected: [ 57, 0x00 ])
+        do_uuAppendInteger_test(data, data: Int16(0x1234), expected: [ 0x34, 0x12 ])
+        do_uuAppendInteger_test(data, data: Int16.min, expected: [ 0x00, 0x80 ])
+        do_uuAppendInteger_test(data, data: Int16.max, expected: [ 0xFF, 0x7F ])
+        
+        do_uuAppendInteger_test(data, data: Int32(0), expected: [ 0, 0, 0, 0 ])
+        do_uuAppendInteger_test(data, data: Int32(0x00FF), expected: [ 0xFF, 0x00, 0x00, 0x00 ])
+        do_uuAppendInteger_test(data, data: Int32(0x00FF).bigEndian, expected: [ 0x00, 0x00, 0x00, 0xFF ])
+        do_uuAppendInteger_test(data, data: Int32(57), expected: [ 57, 0x00, 0x00, 0x00 ])
+        do_uuAppendInteger_test(data, data: Int32(0x12345678), expected: [ 0x78, 0x56, 0x34, 0x12 ])
+        do_uuAppendInteger_test(data, data: Int32.min, expected: [ 0x00, 0x00, 0x00, 0x80 ])
+        do_uuAppendInteger_test(data, data: Int32.max, expected: [ 0xFF, 0xFF, 0xFF, 0x7F ])
+        
+        do_uuAppendInteger_test(data, data: Int64(0), expected: [ 0, 0, 0, 0, 0, 0, 0, 0 ])
+        do_uuAppendInteger_test(data, data: Int64(0x00FF), expected: [ 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ])
+        do_uuAppendInteger_test(data, data: Int64(0x00FF).bigEndian, expected: [ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF ])
+        do_uuAppendInteger_test(data, data: Int64(57), expected: [ 57, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ])
+        do_uuAppendInteger_test(data, data: Int64(0xABCD1234), expected: [ 0x34, 0x12, 0xCD, 0xAB, 0x00, 0x00, 0x00, 0x00 ])
+        do_uuAppendInteger_test(data, data: Int64.min, expected: [ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 ])
+        do_uuAppendInteger_test(data, data: Int64.max, expected: [ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F ])
+    }
 }
