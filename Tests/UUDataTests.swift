@@ -317,15 +317,15 @@ class UUDataTests: XCTestCase
     
     func test_uuInt8AtIndex()
     {
-        let bytes: [UInt8] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF, 0xFF, 0x00, 0xFF, 0x7F, 0x80]
+        let bytes: [UInt8] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF, 0xFF, 0x7F, 0x80]
         do_uuInt8AtIndex_test(bytes, index: 0, expected: 0)
         do_uuInt8AtIndex_test(bytes, index: 1, expected: 1)
         do_uuInt8AtIndex_test(bytes, index: 2, expected: 2)
         do_uuInt8AtIndex_test(bytes, index: 15, expected: 0x0F)
         do_uuInt8AtIndex_test(bytes, index: 10, expected: 0x0A)
         do_uuInt8AtIndex_test(bytes, index: 16, expected: -1)
-        do_uuInt8AtIndex_test(bytes, index: 17, expected: 0x7F)
-        do_uuInt8AtIndex_test(bytes, index: 18, expected: 0x80)
+        do_uuInt8AtIndex_test(bytes, index: 17, expected: Int8.max)
+        do_uuInt8AtIndex_test(bytes, index: 18, expected: Int8.min)
     }
     
     // MARK: uuInt16(at:count)
@@ -346,8 +346,8 @@ class UUDataTests: XCTestCase
         do_uuInt16AtIndex_test(bytes, index: 14, expected: 0x0F0E)
         do_uuInt16AtIndex_test(bytes, index: 10, expected: 0x0B0A)
         do_uuInt16AtIndex_test(bytes, index: 16, expected: -1)
-        do_uuInt16AtIndex_test(bytes, index: 18, expected: Int16.min)
-        do_uuInt16AtIndex_test(bytes, index: 20, expected: Int16.max)
+        do_uuInt16AtIndex_test(bytes, index: 18, expected: Int16.max)
+        do_uuInt16AtIndex_test(bytes, index: 20, expected: Int16.min)
     }
     
     // MARK: uuInt32(at:count)
@@ -368,8 +368,8 @@ class UUDataTests: XCTestCase
         do_uuInt32AtIndex_test(bytes, index: 12, expected: 0x0F0E0D0C)
         do_uuInt32AtIndex_test(bytes, index: 10, expected: 0x0D0C0B0A)
         do_uuInt32AtIndex_test(bytes, index: 16, expected: -1)
-        do_uuInt32AtIndex_test(bytes, index: 20, expected: Int32.min)
-        do_uuInt32AtIndex_test(bytes, index: 24, expected: Int32.max)
+        do_uuInt32AtIndex_test(bytes, index: 20, expected: Int32.max)
+        do_uuInt32AtIndex_test(bytes, index: 24, expected: Int32.min)
     }
     
     // MARK: uuInt64(at:count)
@@ -389,7 +389,25 @@ class UUDataTests: XCTestCase
         do_uuInt64AtIndex_test(bytes, index: 2, expected: 0x0908070605040302)
         do_uuInt64AtIndex_test(bytes, index: 8, expected: 0x0F0E0D0C0B0A0908)
         do_uuInt64AtIndex_test(bytes, index: 16, expected: -1)
-        do_uuInt64AtIndex_test(bytes, index: 24, expected: Int64.min)
-        do_uuInt64AtIndex_test(bytes, index: 32, expected: Int64.max)
+        do_uuInt64AtIndex_test(bytes, index: 24, expected: Int64.max)
+        do_uuInt64AtIndex_test(bytes, index: 32, expected: Int64.min)
+    }
+    
+    // MARK: uuString(at:count:with)
+    
+    private func do_uuStringAtIndex_test(_ bytes: [UInt8], index: Int, count: Int, encoding: String.Encoding, expected: String)
+    {
+        let input = Data(bytes: bytes, count: bytes.count)
+        let actual = input.uuString(at: index, count: count, with: encoding)
+        XCTAssertNotNil(actual)
+        XCTAssertEqual(actual, expected)
+    }
+    
+    func test_uuStringAtIndex()
+    {
+        let bytes: [UInt8] = [ 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x41, 0x42, 0x43, 0x44 ]
+        do_uuStringAtIndex_test(bytes, index: 0, count: 2, encoding: .ascii, expected: "01")
+        do_uuStringAtIndex_test(bytes, index: 0, count: bytes.count, encoding: .ascii, expected: "0123456ABCD")
+        do_uuStringAtIndex_test(bytes, index: 4, count: 5, encoding: .ascii, expected: "456AB")
     }
 }
