@@ -21,7 +21,11 @@ let package = Package(
 			name: "UUSwiftCore",
 			dependencies: [],
 			path: "UUSwiftCore",
-			exclude: ["Info.plist"])
+			exclude: ["Info.plist"]),
+        .testTarget(
+            name: "UUSwiftCoreTests",
+            dependencies: ["UUSwiftCore"],
+            path: "Tests"),
 	],
 	swiftLanguageVersions: [
 		.v4_2,
