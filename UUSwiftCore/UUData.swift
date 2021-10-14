@@ -218,53 +218,11 @@ public extension Data
         }
     }
     
-    mutating func uuReplaceInteger<T: FixedWidthInteger>(_ value: T, at index: Int)
+    mutating func uuReplace<T: FixedWidthInteger>(_ value: T, at index: Int)
     {
-        withUnsafePointer(to: value)
-        { ptr in
-            let count = MemoryLayout<T>.size
-            let tmp = Data(buffer: UnsafeBufferPointer(start: ptr, count: MemoryLayout<T>.size))
-            replaceSubrange(index..<count, with: tmp)
+        Swift.withUnsafeBytes(of: value)
+        { buffer in
+            replaceSubrange(index..<(index+buffer.count), with: buffer)
         }
-    }
-    
-    mutating func uuReplaceUInt8(_ value: UInt8, at index: Int)
-    {
-        uuReplaceInteger(value, at: index)
-    }
-    
-    mutating func uuReplaceUInt16(_ value: UInt16, at index: Int)
-    {
-        uuReplaceInteger(value, at: index)
-    }
-    
-    mutating func uuReplaceUInt32(_ value: UInt32, at index: Int)
-    {
-        uuReplaceInteger(value, at: index)
-    }
-    
-    mutating func uuReplaceUInt64(_ value: UInt64, at index: Int)
-    {
-        uuReplaceInteger(value, at: index)
-    }
-    
-    mutating func uuReplaceInt8(_ value: Int8, at index: Int)
-    {
-        uuReplaceInteger(value, at: index)
-    }
-    
-    mutating func uuReplaceInt16(_ value: Int16, at index: Int)
-    {
-        uuReplaceInteger(value, at: index)
-    }
-    
-    mutating func uuReplaceInt32(_ value: Int32, at index: Int)
-    {
-        uuReplaceInteger(value, at: index)
-    }
-    
-    mutating func uuReplaceInt64(_ value: Int64, at index: Int)
-    {
-        uuReplaceInteger(value, at: index)
     }
 }

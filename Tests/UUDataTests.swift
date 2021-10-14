@@ -512,4 +512,29 @@ class UUDataTests: XCTestCase
         do_uuAppendString_test(data, data: "Hello World", encoding: .utf8, expected: [ 0x48, 0x65, 0x6C, 0x6C, 0x6F, 0x20, 0x57, 0x6F, 0x72, 0x6C, 0x64])
         do_uuAppendString_test(data, data: "1234", encoding: .utf8, expected: [ 0x31, 0x32, 0x33, 0x34 ])
     }
+    
+    // MARK: uuReplace(integer)
+    
+    private func do_uuReplaceInteger_test<T: FixedWidthInteger>(_ bytes: [UInt8], data: T, index: Int, expected: [UInt8])
+    {
+        var input = Data(bytes: bytes, count: bytes.count)
+        XCTAssertNotNil(input)
+        
+        let countBefore = input.count
+        input.uuReplace(data, at: index)
+        let countAfter = input.count
+        
+        XCTAssertEqual(countAfter, countBefore)
+        XCTAssertEqual(input.uuBytes, expected)
+    }
+    
+    func test_uuReplaceInteger()
+    {
+        let bytes: [UInt8] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF]
+        
+        do_uuReplaceInteger_test(bytes, data: UInt8(57), index: 3, expected: [0, 1, 2, 57, 4, 5, 6, 7, 8, 9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF])
+        do_uuReplaceInteger_test(bytes, data: UInt16(57), index: 3, expected: [0, 1, 2, 57, 0, 5, 6, 7, 8, 9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF])
+        do_uuReplaceInteger_test(bytes, data: UInt32(57), index: 3, expected: [0, 1, 2, 57, 0, 0, 0, 7, 8, 9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF])
+        do_uuReplaceInteger_test(bytes, data: UInt64(57), index: 3, expected: [0, 1, 2, 57, 0, 0, 0, 0, 0, 0, 0, 0xB, 0xC, 0xD, 0xE, 0xF])
+    }
 }
