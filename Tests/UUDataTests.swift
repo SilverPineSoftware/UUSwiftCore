@@ -488,4 +488,28 @@ class UUDataTests: XCTestCase
         do_uuAppendInteger_test(data, data: Int64.min, expected: [ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 ])
         do_uuAppendInteger_test(data, data: Int64.max, expected: [ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F ])
     }
+    
+    // MARK: uuAppend(string)
+    
+    
+    private func do_uuAppendString_test(_ existing: Data, data: String, encoding: String.Encoding, expected: [UInt8])
+    {
+        var input = existing.uuData(at: 0, count: existing.count) // Make a copy
+        XCTAssertNotNil(input)
+        
+        let countBefore = input!.count
+        input!.uuAppend(data, encoding: encoding)
+        let countAfter = input!.count
+        
+        XCTAssertEqual(countAfter - countBefore, data.count) // Assume 1 byte encodings for this test
+        XCTAssertEqual(input!.uuBytes, expected)
+    }
+    
+    func test_uuAppendString()
+    {
+        let data = Data()
+        
+        do_uuAppendString_test(data, data: "Hello World", encoding: .utf8, expected: [ 0x48, 0x65, 0x6C, 0x6C, 0x6F, 0x20, 0x57, 0x6F, 0x72, 0x6C, 0x64])
+        do_uuAppendString_test(data, data: "1234", encoding: .utf8, expected: [ 0x31, 0x32, 0x33, 0x34 ])
+    }
 }
