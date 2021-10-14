@@ -71,65 +71,141 @@ public extension Data
         return [UInt8](self)
     }
     
-    func uuData(at index: Int, count: Int) -> Data
+    func uuData(at index: Int, count: Int) -> Data?
     {
+        guard index >= 0 else
+        {
+            return nil
+        }
+        
         let upperIndex = ((index + count) > self.count) ? self.count : index + count
-        return self.subdata(in: index..<upperIndex)
+        
+        guard index <= upperIndex else
+        {
+            return nil
+        }
+        
+        return subdata(in: index..<upperIndex)
     }
     
-    func uuInteger<T: FixedWidthInteger>(at index: Int) -> T
+    func uuInteger<T: FixedWidthInteger>(at index: Int) -> T?
     {
-        return uuData(at: index, count: MemoryLayout<T>.size).withUnsafeBytes{ $0.load(as: T.self) }
+        let size = MemoryLayout<T>.size
+        guard let subData = uuData(at: index, count: size),
+              !subData.isEmpty,
+              subData.count >= size else
+        {
+            return nil
+        }
+        
+        return subData.withUnsafeBytes{ $0.load(as: T.self) }
     }
     
-    func uuUInt8At(at index: Int) -> UInt8
-    {
-        return uuInteger(at: index)
-    }
-    
-    func uuUInt16At(at index: Int) -> UInt16
-    {
-        return uuInteger(at: index)
-    }
-    
-    func uuUInt32At(at index: Int) -> UInt32
-    {
-        return uuInteger(at: index)
-    }
-    
-    func uuUInt64At(at index: Int) -> UInt64
-    {
-        return uuInteger(at: index)
-    }
-    
-    func uuInt8At(at index: Int) -> Int8
+    func uuUInt8(at index: Int) -> UInt8?
     {
         return uuInteger(at: index)
     }
     
-    func uuInt16At(at index: Int) -> Int16
+    func uuUInt16(at index: Int) -> UInt16?
     {
         return uuInteger(at: index)
     }
     
-    func uuInt32At(at index: Int) -> Int32
+    func uuUInt32(at index: Int) -> UInt32?
     {
         return uuInteger(at: index)
     }
     
-    func uuInt64At(at index: Int) -> Int64
+    func uuUInt64(at index: Int) -> UInt64?
+    {
+        return uuInteger(at: index)
+    }
+    
+    func uuInt8(at index: Int) -> Int8?
+    {
+        return uuInteger(at: index)
+    }
+    
+    func uuInt16(at index: Int) -> Int16?
+    {
+        return uuInteger(at: index)
+    }
+    
+    func uuInt32(at index: Int) -> Int32?
+    {
+        return uuInteger(at: index)
+    }
+    
+    func uuInt64(at index: Int) -> Int64?
     {
         return uuInteger(at: index)
     }
     
     func uuString(at index: Int, count: Int, with encoding: String.Encoding) -> String?
     {
-        return String(bytes: uuData(at: index, count: count), encoding: encoding)
+        guard let data = uuData(at: index, count: count) else
+        {
+            return nil
+        }
+        
+        return String(bytes: data, encoding: encoding)
+    }
+    
+    // MARK: Safe gettors
+    
+    func uuSafeData(at index: Int, count: Int) -> Data
+    {
+        return uuData(at: index, count: count) ?? Data()
+    }
+    
+    func uuSafeUInt8(at index: Int, defaultValue: UInt8 = 0) -> UInt8
+    {
+        return uuInteger(at: index) ?? defaultValue
+    }
+    
+    func uuSafeUInt16(at index: Int, defaultValue: UInt16 = 0) -> UInt16
+    {
+        return uuInteger(at: index) ?? defaultValue
+    }
+    
+    func uuSafeUInt32(at index: Int, defaultValue: UInt32 = 0) -> UInt32
+    {
+        return uuInteger(at: index) ?? defaultValue
+    }
+    
+    func uuSafeUInt64(at index: Int, defaultValue: UInt64 = 0) -> UInt64
+    {
+        return uuInteger(at: index) ?? defaultValue
+    }
+    
+    func uuSafeInt8(at index: Int, defaultValue: Int8 = 0) -> Int8
+    {
+        return uuInteger(at: index) ?? defaultValue
+    }
+    
+    func uuSafeInt16(at index: Int, defaultValue: Int16 = 0) -> Int16
+    {
+        return uuInteger(at: index) ?? defaultValue
+    }
+    
+    func uuSafeInt32(at index: Int, defaultValue: Int32 = 0) -> Int32
+    {
+        return uuInteger(at: index) ?? defaultValue
+    }
+    
+    func uuSafeInt64(at index: Int, defaultValue: Int64 = 0) -> Int64
+    {
+        return uuInteger(at: index) ?? defaultValue
+    }
+    
+    func uuSafeString(at index: Int, count: Int, with encoding: String.Encoding, defaultValue: String = "") -> String
+    {
+        return uuString(at: index, count: count, with: encoding) ?? defaultValue
     }
     
     // MARK: Mutating Functions
     
-    mutating func uuAppendInteger<T: FixedWidthInteger>(_ value: T)
+    mutating func uuAppend<T: FixedWidthInteger>(_ value: T)
     {
         withUnsafePointer(to: value)
         { ptr in
@@ -137,47 +213,7 @@ public extension Data
         }
     }
     
-    mutating func uuAppendUInt8(_ value: UInt8)
-    {
-        uuAppendInteger(value)
-    }
-    
-    mutating func uuAppendUInt16(_ value: UInt16)
-    {
-        uuAppendInteger(value)
-    }
-    
-    mutating func uuAppendUInt32(_ value: UInt32)
-    {
-        uuAppendInteger(value)
-    }
-    
-    mutating func uuAppendUInt64(_ value: UInt64)
-    {
-        uuAppendInteger(value)
-    }
-    
-    mutating func uuAppendInt8(_ value: Int8)
-    {
-        uuAppendInteger(value)
-    }
-    
-    mutating func uuAppendInt16(_ value: Int16)
-    {
-        uuAppendInteger(value)
-    }
-    
-    mutating func uuAppendInt32(_ value: Int32)
-    {
-        uuAppendInteger(value)
-    }
-    
-    mutating func uuAppendInt64(_ value: Int64)
-    {
-        uuAppendInteger(value)
-    }
-    
-    mutating func uuAppendString(_ value: String?, encoding: String.Encoding = .utf8)
+    mutating func uuAppend(_ value: String?, encoding: String.Encoding = .utf8)
     {
         if let actual = value, let data = actual.data(using: encoding)
         {
