@@ -231,4 +231,26 @@ public class UUMutexWrapper: NSObject
 	}
 }
 
+public func uuInvokeBackground(_ block: @escaping (()->()))
+{
+    DispatchQueue.global(qos: .background).async
+    {
+        block()
+    }
+}
 
+public func uuInvokeMain(_ block: @escaping (()->()))
+{
+    DispatchQueue.main.async
+    {
+        block()
+    }
+}
+
+public func uuPostNotification(_ notification: Notification.Name, object: Any? = nil, userInfo: [AnyHashable:Any]? = nil)
+{
+    uuInvokeMain
+    {
+        NotificationCenter.default.post(name: notification, object: object, userInfo: userInfo)
+    }
+}
