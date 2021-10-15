@@ -194,5 +194,18 @@ public extension String
         return working.lowercased()
     }
     
+    //Return the number of words in the string
+    func uuWordCount() -> Int {
+        let regex = try? NSRegularExpression(pattern: "\\w+")
+        
+        return regex?.numberOfMatches(in: self, range: NSRange(location: 0, length: self.utf16.count)) ?? 0
+    }
+
+    //Add prefix to a string if it doesn't already exist
+    func uuWithPrefix(_ prefix: String) -> String {
+        if self.hasPrefix(prefix) { return self }
+        
+        return "\(prefix)\(self)"
+    }
 }
 
