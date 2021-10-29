@@ -23,10 +23,10 @@ class UUTimerTests: XCTestCase
         let timeout = 2.0
         var lastStartTime: TimeInterval = 0
         
-        let timer = UUTimer(timerId: timerId, interval: timeout, userInfo: nil, shouldRepeat: false, queue: DispatchQueue.global(qos: .background))
+        let timer = UUTimer(identifier: timerId, interval: timeout, userInfo: nil, shouldRepeat: false, queue: DispatchQueue.global(qos: .background))
         { t in
             
-            XCTAssertEqual(t.timerId, timerId)
+            XCTAssertEqual(t.identifier, timerId)
             XCTAssertNil(t.userInfo)
             
             let end = Date.timeIntervalSinceReferenceDate
@@ -47,7 +47,7 @@ class UUTimerTests: XCTestCase
         
         let t = active.first
         XCTAssertNotNil(t)
-        XCTAssertEqual(t?.timerId, timerId)
+        XCTAssertEqual(t?.identifier, timerId)
         
         uuWaitForExpectations(timeout + timerFudgeFactor)
         
@@ -64,10 +64,10 @@ class UUTimerTests: XCTestCase
         let userInfo: [String:String] = ["Hello":"World", "Foo":"Bar"]
         var lastStartTime: TimeInterval = 0
         
-        let timer = UUTimer(timerId: timerId, interval: timeout, userInfo: userInfo, shouldRepeat: false, queue: DispatchQueue.global(qos: .background))
+        let timer = UUTimer(identifier: timerId, interval: timeout, userInfo: userInfo, shouldRepeat: false, queue: DispatchQueue.global(qos: .background))
         { t in
             
-            XCTAssertEqual(t.timerId, timerId)
+            XCTAssertEqual(t.identifier, timerId)
             XCTAssertNotNil(t.userInfo)
             
             let timerInfo = t.userInfo as? [String:String]
@@ -92,7 +92,7 @@ class UUTimerTests: XCTestCase
         
         let t = active.first
         XCTAssertNotNil(t)
-        XCTAssertEqual(t?.timerId, timerId)
+        XCTAssertEqual(t?.identifier, timerId)
         
         uuWaitForExpectations(timeout + timerFudgeFactor)
         
@@ -112,10 +112,10 @@ class UUTimerTests: XCTestCase
         var lastStartTime: TimeInterval = 0
         let maxCount = 10
         
-        let timer = UUTimer(timerId: timerId, interval: timeout, userInfo: nil, shouldRepeat: true, queue: DispatchQueue.global(qos: .background))
+        let timer = UUTimer(identifier: timerId, interval: timeout, userInfo: nil, shouldRepeat: true, queue: DispatchQueue.global(qos: .background))
         { t in
             
-            XCTAssertEqual(t.timerId, timerId)
+            XCTAssertEqual(t.identifier, timerId)
             XCTAssertNil(t.userInfo)
             
             let end = Date.timeIntervalSinceReferenceDate
@@ -150,7 +150,7 @@ class UUTimerTests: XCTestCase
         
         let t = active.first
         XCTAssertNotNil(t)
-        XCTAssertEqual(t?.timerId, timerId)
+        XCTAssertEqual(t?.identifier, timerId)
         
         let totalTimeout = Double(maxCount) * Double(timeout + timerFudgeFactor)
         uuWaitForExpectations(totalTimeout)
@@ -166,10 +166,10 @@ class UUTimerTests: XCTestCase
         //var lastStartTime: TimeInterval = 0
         
         let expOne = uuExpectationForMethod(tag: timerIdOne)
-        let timerOne = UUTimer(timerId: timerIdOne, interval: timeout, userInfo: UInt8(1), shouldRepeat: false, queue: DispatchQueue.global(qos: .background))
+        let timerOne = UUTimer(identifier: timerIdOne, interval: timeout, userInfo: UInt8(1), shouldRepeat: false, queue: DispatchQueue.global(qos: .background))
         { t in
             
-            XCTAssertEqual(t.timerId, timerIdOne)
+            XCTAssertEqual(t.identifier, timerIdOne)
             XCTAssertNotNil(t.userInfo)
             let info = t.userInfo as? UInt8
             XCTAssertNotNil(info)
@@ -187,15 +187,15 @@ class UUTimerTests: XCTestCase
         
         let t = active.first
         XCTAssertNotNil(t)
-        XCTAssertEqual(t?.timerId, timerIdOne)
+        XCTAssertEqual(t?.identifier, timerIdOne)
         
         /// Timer 2
         let timerIdTwo = "\(#function)_TimerId_2"
         let expTwo = uuExpectationForMethod(tag: timerIdTwo)
-        let timerTwo = UUTimer(timerId: timerIdTwo, interval: timeout, userInfo: UInt8(2), shouldRepeat: false, queue: DispatchQueue.global(qos: .background))
+        let timerTwo = UUTimer(identifier: timerIdTwo, interval: timeout, userInfo: UInt8(2), shouldRepeat: false, queue: DispatchQueue.global(qos: .background))
         { t in
             
-            XCTAssertEqual(t.timerId, timerIdTwo)
+            XCTAssertEqual(t.identifier, timerIdTwo)
             XCTAssertNotNil(t.userInfo)
             let info = t.userInfo as? UInt8
             XCTAssertNotNil(info)
@@ -215,10 +215,10 @@ class UUTimerTests: XCTestCase
         /// Timer 3
         let timerIdThree = "\(#function)_TimerId_3"
         let expThree = uuExpectationForMethod(tag: timerIdThree)
-        let timerThree = UUTimer(timerId: timerIdThree, interval: timeout, userInfo: UInt8(3), shouldRepeat: false, queue: DispatchQueue.global(qos: .background))
+        let timerThree = UUTimer(identifier: timerIdThree, interval: timeout, userInfo: UInt8(3), shouldRepeat: false, queue: DispatchQueue.global(qos: .background))
         { t in
             
-            XCTAssertEqual(t.timerId, timerIdThree)
+            XCTAssertEqual(t.identifier, timerIdThree)
             XCTAssertNotNil(t.userInfo)
             let info = t.userInfo as? UInt8
             XCTAssertNotNil(info)
@@ -253,7 +253,7 @@ class UUTimerTests: XCTestCase
             let timeout = TimeInterval(uuRandomUInt32(low: UInt32(timeoutMin), high: UInt32(timeoutMax)))
             let info = Int32(i)
             let exp = uuExpectationForMethod(tag: timerId)
-            UUTimerPool.shared.startWatchdogTimer(timerId: timerId, timeout: timeout, userInfo: info)
+            UUTimerPool.shared.start(identifier: timerId, timeout: timeout, userInfo: info)
             { result in
                 
                 NSLog("Timer \(i) triggered")

@@ -17,7 +17,7 @@ public typealias UUWatchdogTimerBlock = ((Any?)->())
  */
 public class UUTimer
 {
-    public let timerId: String
+    public let identifier: String
     public let userInfo: Any?
     public let interval: TimeInterval
     private(set) public var lastFireTime: TimeInterval = 0
@@ -27,7 +27,7 @@ public class UUTimer
     private var dispatchSource: DispatchSourceTimer? = nil
     
     public required init(
-        timerId: String = UUID().uuidString,
+        identifier: String = UUID().uuidString,
         interval: TimeInterval,
         userInfo: Any? = nil,
         shouldRepeat: Bool = false,
@@ -35,7 +35,7 @@ public class UUTimer
         pool: UUTimerPool = UUTimerPool.shared,
         block: @escaping UUTimerBlock)
     {
-        self.timerId = timerId
+        self.identifier = identifier
         self.interval = interval
         self.userInfo = userInfo
         self.shouldRepeat = shouldRepeat
@@ -83,7 +83,7 @@ public class UUTimer
         if let src = dispatchSource
         {
             //NSLog("Starting timer \(timerId), interval: \(interval), repeat: \(shouldRepeat), dispatchSource: \(String(describing: dispatchSource)), userInfo: \(String(describing: userInfo))")
-            pool.addTimer(self)
+            pool.add(self)
             src.resume()
         }
         else
@@ -103,7 +103,7 @@ public class UUTimer
             self.dispatchSource = nil
         }
         
-        pool.removeTimer(self)
+        pool.remove(self)
     }
 }
 
@@ -117,31 +117,38 @@ public class UUTimerPool
     private var activeTimers: [String:UUTimer] = [:]
     private let activeTimersLock = NSRecursiveLock()
     
-    public static let shared = UUTimerPool()
+    public static let shared = UUTimerPool(identifier: "UUTimerPool.shared")
     
-    public func addTimer(_ timer: UUTimer)
+    public let identifier: String
+    
+    public required init(identifier: String)
     {
-        defer { activeTimersLock.unlock() }
-        activeTimersLock.lock()
-        
-        activeTimers[timer.timerId] = timer
+        self.identifier = identifier
     }
     
-    public func removeTimer(_ timer: UUTimer)
+    public func add(_ timer: UUTimer)
     {
         defer { activeTimersLock.unlock() }
         activeTimersLock.lock()
         
-        activeTimers.removeValue(forKey: timer.timerId)
+        activeTimers[timer.identifier] = timer
+    }
+    
+    public func remove(_ timer: UUTimer)
+    {
+        defer { activeTimersLock.unlock() }
+        activeTimersLock.lock()
+        
+        activeTimers.removeValue(forKey: timer.identifier)
     }
     
     // Find an active timer by its ID
-    public func findActiveTimer(_ timerId: String) -> UUTimer?
+    public func find(by identifier: String) -> UUTimer?
     {
         defer { activeTimersLock.unlock() }
         activeTimersLock.lock()
         
-        return activeTimers[timerId]
+        return activeTimers[identifier]
     }
     
     // Lists all active timers
@@ -152,22 +159,38 @@ public class UUTimerPool
         
         return activeTimers.values.compactMap({ $0 })
     }
+    
+    public func cancel(by identifier: String)
+    {
+        find(by: identifier)?.cancel()
+    }
+    
+    public func cancelAllTimers()
+    {
+        //NSLog("Cancelling all timers")
+        
+        let list = listActiveTimers()
+        list.forEach
+        { t in
+            t.cancel()
+        }
+    }
 }
 
 public extension UUTimerPool // Watchdog Timer support
 {
-    func startWatchdogTimer(
-        timerId: String,
+    func start(
+        identifier: String,
         timeout: TimeInterval,
         userInfo: Any?,
         queue: DispatchQueue = UUTimer.backgroundThreadTimerQueue(),
         block: UUWatchdogTimerBlock?)
     {
-        cancelWatchdogTimer(timerId: timerId)
+        cancel(by: identifier)
         
         if (timeout > 0)
         {
-            let t = UUTimer(timerId: timerId, interval: timeout, userInfo: userInfo, shouldRepeat: false, queue: queue)
+            let t = UUTimer(identifier: identifier, interval: timeout, userInfo: userInfo, shouldRepeat: false, queue: queue)
             { _ in
                 if let b = block
                 {
@@ -176,14 +199,6 @@ public extension UUTimerPool // Watchdog Timer support
             }
             
             t.start()
-        }
-    }
-    
-    func cancelWatchdogTimer(timerId: String)
-    {
-        if let t = UUTimerPool.shared.findActiveTimer(timerId)
-        {
-            t.cancel()
         }
     }
 }
