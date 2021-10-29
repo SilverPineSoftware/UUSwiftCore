@@ -117,11 +117,29 @@ public class UUTimerPool
     private var activeTimers: [String:UUTimer] = [:]
     private let activeTimersLock = NSRecursiveLock()
     
-    public static let shared = UUTimerPool(identifier: "UUTimerPool.shared")
+    private static var pools: [String:UUTimerPool] = [:]
+    private static let poolsLock = NSRecursiveLock()
+    
+    public static let shared = UUTimerPool.getPool("UUTimerPool.shared")
     
     public let identifier: String
     
-    public required init(identifier: String)
+    public static func getPool(_ identifier: String) -> UUTimerPool
+    {
+        defer { poolsLock.unlock() }
+        poolsLock.lock()
+        
+        var pool = pools[identifier]
+        if (pool == nil)
+        {
+            pool = UUTimerPool(identifier: identifier)
+            pools[identifier] = pool
+        }
+        
+        return pool!
+    }
+    
+    internal required init(identifier: String)
     {
         self.identifier = identifier
     }
