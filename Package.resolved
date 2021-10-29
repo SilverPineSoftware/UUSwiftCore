@@ -1,0 +1,16 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "UUSwiftTestCore",
+        "repositoryURL": "https://github.com/SilverPineSoftware/UUSwiftTestCore.git",
+        "state": {
+          "branch": null,
+          "revision": "27f252d0f0715868794ddb7cb7d274b89f7d80f5",
+          "version": "0.0.3"
+        }
+      }
+    ]
+  },
+  "version": 1
+}

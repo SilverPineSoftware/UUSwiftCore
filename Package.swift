@@ -16,6 +16,14 @@ let package = Package(
 			name: "UUSwiftCore",
 			targets: ["UUSwiftCore"]),
 	],
+    
+    dependencies: [
+        .package(
+            url: "https://github.com/SilverPineSoftware/UUSwiftTestCore.git",
+            from: "0.0.3"
+        )
+    ],
+    
 	targets: [
 		.target(
 			name: "UUSwiftCore",
@@ -24,7 +32,7 @@ let package = Package(
 			exclude: ["Info.plist"]),
         .testTarget(
             name: "UUSwiftCoreTests",
-            dependencies: ["UUSwiftCore"],
+            dependencies: ["UUSwiftTestCore", "UUSwiftCore"],
             path: "Tests"),
 	],
 	swiftLanguageVersions: [
