@@ -31,7 +31,6 @@ public class UUTimer
         interval: TimeInterval,
         userInfo: Any? = nil,
         shouldRepeat: Bool = false,
-        queue: DispatchQueue,
         pool: UUTimerPool = UUTimerPool.shared,
         block: @escaping UUTimerBlock)
     {
@@ -42,7 +41,7 @@ public class UUTimer
         self.lastFireTime = 0
         self.pool = pool
         
-        self.dispatchSource = DispatchSource.makeTimerSource(flags: [], queue: queue)
+        self.dispatchSource = DispatchSource.makeTimerSource(flags: [], queue: pool.dispatchQueue)
         
         self.lastFireTime = Date().timeIntervalSinceReferenceDate
         
@@ -64,18 +63,6 @@ public class UUTimer
                 self.cancel()
             }
         }
-    }
-    
-    // Returns a shared serial queue for executing timers on a background thread
-    public static func backgroundThreadTimerQueue() -> DispatchQueue
-    {
-        return DispatchQueue.global(qos: .userInteractive)
-    }
-    
-    // Alias for DispatchQueue.main
-    public static func mainThreadTimerQueue() -> DispatchQueue
-    {
-        return DispatchQueue.main
     }
     
     public func start()
@@ -120,11 +107,12 @@ public class UUTimerPool
     private static var pools: [String:UUTimerPool] = [:]
     private static let poolsLock = NSRecursiveLock()
     
-    public static let shared = UUTimerPool.getPool("UUTimerPool.shared")
+    public static let shared = UUTimerPool.getPool("UUTimerPool.shared", queue: DispatchQueue.main)
     
     public let identifier: String
+    public let dispatchQueue: DispatchQueue
     
-    public static func getPool(_ identifier: String) -> UUTimerPool
+    public static func getPool(_ identifier: String, queue: DispatchQueue = DispatchQueue.global(qos: .userInteractive)) -> UUTimerPool
     {
         defer { poolsLock.unlock() }
         poolsLock.lock()
@@ -132,16 +120,17 @@ public class UUTimerPool
         var pool = pools[identifier]
         if (pool == nil)
         {
-            pool = UUTimerPool(identifier: identifier)
+            pool = UUTimerPool(identifier: identifier, queue: queue)
             pools[identifier] = pool
         }
         
         return pool!
     }
     
-    internal required init(identifier: String)
+    internal required init(identifier: String, queue: DispatchQueue)
     {
         self.identifier = identifier
+        self.dispatchQueue = queue
     }
     
     public func add(_ timer: UUTimer)
@@ -185,11 +174,14 @@ public class UUTimerPool
     
     public func cancelAllTimers()
     {
-        //NSLog("Cancelling all timers")
+        NSLog("Cancelling all timers")
         
         let list = listActiveTimers()
+        NSLog("There are \(list.count) active timers")
+        
         list.forEach
         { t in
+            NSLog("Canceling timer \(t.identifier)")
             t.cancel()
         }
     }
@@ -201,14 +193,13 @@ public extension UUTimerPool // Watchdog Timer support
         identifier: String,
         timeout: TimeInterval,
         userInfo: Any?,
-        queue: DispatchQueue = UUTimer.backgroundThreadTimerQueue(),
         block: UUWatchdogTimerBlock?)
     {
         cancel(by: identifier)
         
         if (timeout > 0)
         {
-            let t = UUTimer(identifier: identifier, interval: timeout, userInfo: userInfo, shouldRepeat: false, queue: queue)
+            let t = UUTimer(identifier: identifier, interval: timeout, userInfo: userInfo, shouldRepeat: false, pool: self)
             { _ in
                 if let b = block
                 {
