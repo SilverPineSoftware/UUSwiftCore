@@ -711,4 +711,24 @@ class UUDataTests: XCTestCase
             }
         }
     }
+    
+    func test_uuSlice()
+    {
+        let testData: [(String,Int,[String])] =
+        [
+            ("112233445566", 2, ["1122", "3344", "5566"]),
+            ("11223344556677", 2, ["1122", "3344", "5566", "77"]),
+            ("112233445566", 20, ["112233445566"])
+        ]
+        
+        for td in testData
+        {
+            let input = td.0.uuToHexData() as Data?
+            XCTAssertNotNil(input)
+            
+            let actual = input!.uuSlice(chunkSize: td.1)
+            let actualHex = actual.compactMap({ $0.uuToHexString() })
+            XCTAssertEqual(td.2, actualHex)
+        }
+    }
 }

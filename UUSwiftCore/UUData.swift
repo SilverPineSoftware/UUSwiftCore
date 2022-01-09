@@ -296,4 +296,23 @@ public extension Data
         
         return (UInt32(data1) * 10000) + UInt32(data2)
     }
+    
+    func uuSlice(chunkSize: Int) -> [Data]
+    {
+        var chunks: [Data] = []
+        
+        var index = 0
+        
+        while (index < count)
+        {
+            if let chunk = uuData(at: index, count: chunkSize)
+            {
+                chunks.append(chunk)
+            }
+            
+            index += chunkSize
+        }
+        
+        return chunks   
+    }
 }
