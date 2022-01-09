@@ -23,7 +23,7 @@ class UUTimerTests: XCTestCase
         let timeout = 2.0
         var lastStartTime: TimeInterval = 0
         
-        let timer = UUTimer(identifier: timerId, interval: timeout, userInfo: nil, shouldRepeat: false, queue: DispatchQueue.global(qos: .background))
+        let timer = UUTimer(identifier: timerId, interval: timeout, userInfo: nil, shouldRepeat: false)
         { t in
             
             XCTAssertEqual(t.identifier, timerId)
@@ -64,7 +64,7 @@ class UUTimerTests: XCTestCase
         let userInfo: [String:String] = ["Hello":"World", "Foo":"Bar"]
         var lastStartTime: TimeInterval = 0
         
-        let timer = UUTimer(identifier: timerId, interval: timeout, userInfo: userInfo, shouldRepeat: false, queue: DispatchQueue.global(qos: .background))
+        let timer = UUTimer(identifier: timerId, interval: timeout, userInfo: userInfo, shouldRepeat: false)
         { t in
             
             XCTAssertEqual(t.identifier, timerId)
@@ -112,7 +112,7 @@ class UUTimerTests: XCTestCase
         var lastStartTime: TimeInterval = 0
         let maxCount = 10
         
-        let timer = UUTimer(identifier: timerId, interval: timeout, userInfo: nil, shouldRepeat: true, queue: DispatchQueue.global(qos: .background))
+        let timer = UUTimer(identifier: timerId, interval: timeout, userInfo: nil, shouldRepeat: true)
         { t in
             
             XCTAssertEqual(t.identifier, timerId)
@@ -166,7 +166,7 @@ class UUTimerTests: XCTestCase
         //var lastStartTime: TimeInterval = 0
         
         let expOne = uuExpectationForMethod(tag: timerIdOne)
-        let timerOne = UUTimer(identifier: timerIdOne, interval: timeout, userInfo: UInt8(1), shouldRepeat: false, queue: DispatchQueue.global(qos: .background))
+        let timerOne = UUTimer(identifier: timerIdOne, interval: timeout, userInfo: UInt8(1), shouldRepeat: false)
         { t in
             
             XCTAssertEqual(t.identifier, timerIdOne)
@@ -192,7 +192,7 @@ class UUTimerTests: XCTestCase
         /// Timer 2
         let timerIdTwo = "\(#function)_TimerId_2"
         let expTwo = uuExpectationForMethod(tag: timerIdTwo)
-        let timerTwo = UUTimer(identifier: timerIdTwo, interval: timeout, userInfo: UInt8(2), shouldRepeat: false, queue: DispatchQueue.global(qos: .background))
+        let timerTwo = UUTimer(identifier: timerIdTwo, interval: timeout, userInfo: UInt8(2), shouldRepeat: false)
         { t in
             
             XCTAssertEqual(t.identifier, timerIdTwo)
@@ -215,7 +215,7 @@ class UUTimerTests: XCTestCase
         /// Timer 3
         let timerIdThree = "\(#function)_TimerId_3"
         let expThree = uuExpectationForMethod(tag: timerIdThree)
-        let timerThree = UUTimer(identifier: timerIdThree, interval: timeout, userInfo: UInt8(3), shouldRepeat: false, queue: DispatchQueue.global(qos: .background))
+        let timerThree = UUTimer(identifier: timerIdThree, interval: timeout, userInfo: UInt8(3), shouldRepeat: false)
         { t in
             
             XCTAssertEqual(t.identifier, timerIdThree)

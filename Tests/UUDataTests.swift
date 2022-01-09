@@ -537,4 +537,198 @@ class UUDataTests: XCTestCase
         do_uuReplaceInteger_test(bytes, data: UInt32(57), index: 3, expected: [0, 1, 2, 57, 0, 0, 0, 7, 8, 9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF])
         do_uuReplaceInteger_test(bytes, data: UInt64(57), index: 3, expected: [0, 1, 2, 57, 0, 0, 0, 0, 0, 0, 0, 0xB, 0xC, 0xD, 0xE, 0xF])
     }
+    
+    // MARK: Nibble Tests
+    
+    func test_uuHighNibble()
+    {
+        let testData: [(String, UInt8)] =
+        [
+            ("00", 0),
+            ("12", 1),
+            ("01", 0),
+            ("99", 9),
+            ("CB", 0xC),
+            ("57abcd1234", 5),
+            ("FF", 0xF),
+        ]
+        
+        for td in testData
+        {
+            let data = td.0.uuToHexData() as Data?
+            XCTAssertNotNil(data)
+            
+            let actual = data!.uuHighNibble(at: 0)
+            XCTAssertEqual(td.1, actual)
+        }
+    }
+    
+    func test_uuLowNibble()
+    {
+        let testData: [(String, UInt8)] =
+        [
+            ("00", 0),
+            ("12", 2),
+            ("01", 1),
+            ("99", 9),
+            ("CB", 0xB),
+            ("57abcd1234", 7),
+            ("FF", 0xF),
+        ]
+        
+        for td in testData
+        {
+            let data = td.0.uuToHexData() as Data?
+            XCTAssertNotNil(data)
+            
+            let actual = data!.uuLowNibble(at: 0)
+            XCTAssertEqual(td.1, actual)
+        }
+    }
+    
+    // MARK: uuBCDX
+    
+    func test_uuBCD8()
+    {
+        let testData: [(String, UInt8?)] =
+        [
+            ("00", 0),
+            ("12", 12),
+            ("01", 1),
+            ("99", 99),
+            ("57abcd1234", 57),
+            ("FF", nil),
+        ]
+        
+        for td in testData
+        {
+            let data = td.0.uuToHexData() as Data?
+            XCTAssertNotNil(data)
+            
+            let actual = data!.uuBCD8(at: 0)
+            
+            if (td.1 != nil)
+            {
+                XCTAssertNotNil(actual)
+                XCTAssertEqual(td.1, actual)
+            }
+            else
+            {
+                XCTAssertNil(actual)
+            }
+        }
+    }
+    
+    func test_uuBCD16()
+    {
+        let testData: [(String, UInt16?)] =
+        [
+            ("0000", 0),
+            ("1234", 1234),
+            ("0101", 101),
+            ("9999", 9999),
+            ("FFFF", nil),
+            ("12", nil), // Not enough bytes for a UInt16
+            ("1234ABCD", 1234)
+        ]
+        
+        for td in testData
+        {
+            let data = td.0.uuToHexData() as Data?
+            XCTAssertNotNil(data)
+            
+            let actual = data!.uuBCD16(at: 0)
+            
+            if (td.1 != nil)
+            {
+                XCTAssertEqual(td.1, actual)
+            }
+            else
+            {
+                XCTAssertNil(actual)
+            }
+        }
+    }
+    
+    func test_uuBCD24()
+    {
+        let testData: [(String, UInt32?)] =
+        [
+            ("000000", 0),
+            ("123456", 123456),
+            ("010101", 10101),
+            ("999999", 999999),
+            ("FFFFFF", nil),
+            ("1234", nil), // Not enough bytes for a UInt24
+            ("123456ABCD", 123456)
+        ]
+        
+        for td in testData
+        {
+            let data = td.0.uuToHexData() as Data?
+            XCTAssertNotNil(data)
+            
+            let actual = data!.uuBCD24(at: 0)
+            
+            if (td.1 != nil)
+            {
+                XCTAssertEqual(td.1, actual)
+            }
+            else
+            {
+                XCTAssertNil(actual)
+            }
+        }
+    }
+    
+    func test_uuBCD32()
+    {
+        let testData: [(String, UInt32?)] =
+        [
+            ("00000000", 0),
+            ("12345678", 12345678),
+            ("01010101", 1010101),
+            ("99999999", 99999999),
+            ("FFFFFFFF", nil),
+            ("123456", nil), // Not enough bytes for a UInt24
+            ("12345678ABCD", 12345678)
+        ]
+        
+        for td in testData
+        {
+            let data = td.0.uuToHexData() as Data?
+            XCTAssertNotNil(data)
+            
+            let actual = data!.uuBCD32(at: 0)
+            
+            if (td.1 != nil)
+            {
+                XCTAssertEqual(td.1, actual)
+            }
+            else
+            {
+                XCTAssertNil(actual)
+            }
+        }
+    }
+    
+    func test_uuSlice()
+    {
+        let testData: [(String,Int,[String])] =
+        [
+            ("112233445566", 2, ["1122", "3344", "5566"]),
+            ("11223344556677", 2, ["1122", "3344", "5566", "77"]),
+            ("112233445566", 20, ["112233445566"])
+        ]
+        
+        for td in testData
+        {
+            let input = td.0.uuToHexData() as Data?
+            XCTAssertNotNil(input)
+            
+            let actual = input!.uuSlice(chunkSize: td.1)
+            let actualHex = actual.compactMap({ $0.uuToHexString() })
+            XCTAssertEqual(td.2, actualHex)
+        }
+    }
 }
