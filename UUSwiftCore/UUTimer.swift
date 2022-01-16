@@ -53,7 +53,6 @@ public class UUTimer
         
         let fireTime: DispatchTime = (.now() + interval)
         
-        self.dispatchSource?.schedule(deadline: fireTime, repeating: repeatingInterval, leeway: .never)
         self.dispatchSource?.setEventHandler
         {
             block(self)
@@ -63,25 +62,27 @@ public class UUTimer
                 self.cancel()
             }
         }
+        
+        self.dispatchSource?.schedule(deadline: fireTime, repeating: repeatingInterval)
     }
     
     public func start()
     {
         if let src = dispatchSource
         {
-            //NSLog("Starting timer \(timerId), interval: \(interval), repeat: \(shouldRepeat), dispatchSource: \(String(describing: dispatchSource)), userInfo: \(String(describing: userInfo))")
+            //NSLog("Starting timer \(identifier), interval: \(interval), repeat: \(shouldRepeat), dispatchSource: \(String(describing: dispatchSource)), userInfo: \(String(describing: userInfo))")
             pool.add(self)
             src.resume()
         }
         else
         {
-            //NSLog("Cannot start timer \(timerId) because dispatch source is nil")
+            //NSLog("Cannot start timer \(identifier) because dispatch source is nil")
         }
     }
     
     public func cancel()
     {
-        //NSLog("Cancelling timer \(timerId), dispatchSource: \(String(describing: dispatchSource)), userInfo: \(String(describing: userInfo))")
+        //NSLog("Cancelling timer \(identifier), dispatchSource: \(String(describing: dispatchSource)), userInfo: \(String(describing: userInfo))")
         
         if let src = dispatchSource
         {
