@@ -351,10 +351,9 @@ public extension Date // Delta formatters
 
 public extension String
 {
-	func uuParseDate(format: String, timeZone: TimeZone = TimeZone.current) -> Date?
+	func uuParseDate(format: String, timeZone: TimeZone = TimeZone.current, locale: Locale = Locale.current) -> Date?
     {
-        let df = DateFormatter.uuCachedFormatter(format)
-        df.timeZone = timeZone
+        let df = DateFormatter.uuCachedFormatter(format, timeZone: timeZone, locale: locale)
         return df.date(from: self)
     }
     
