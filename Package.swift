@@ -31,7 +31,7 @@ let package = Package(
 			path: "UUSwiftCore",
 			exclude: ["Info.plist"],
             resources: [
-                .copy("PrivacyInfo.plist")]),
+                .copy("PrivacyInfo.xcprivacy")]),
         .testTarget(
             name: "UUSwiftCoreTests",
             dependencies: ["UUSwiftTestCore", "UUSwiftCore"],
