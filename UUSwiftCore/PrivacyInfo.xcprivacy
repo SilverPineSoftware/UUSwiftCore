@@ -19,7 +19,6 @@
 	</array>
 	<key>NSPrivacyAccessedAPITypes</key>
 	<array>
-		<dict/>
 		<dict>
 			<key>NSPrivacyAccessedAPITypeReasons</key>
 			<array>
