@@ -109,17 +109,17 @@ public extension String
         }
     }
     
-    func uuToHexData() -> NSData?
+    func uuToHexData() -> Data?
     {
         let length:Int = self.count
         
         // Must greater than zero and be divisible by two
         if (length <= 0 || (length % 2) != 0)
         {
-            return nil;
+            return nil
         }
         
-        let data:NSMutableData = NSMutableData()
+        var data = Data()
         
         for i in stride(from: 0, to: length, by: 2)
         {
@@ -129,7 +129,7 @@ public extension String
             if (sc.scanHexInt64(&hex))
             {
                 var tmp:UInt8 = UInt8(hex)
-                data.append(&tmp, length: MemoryLayout<UInt8>.size) //sizeof deprecated
+                data.append(&tmp, count: MemoryLayout<UInt8>.size) //sizeof deprecated
             }
             else
             {
