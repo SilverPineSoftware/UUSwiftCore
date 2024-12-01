@@ -54,6 +54,55 @@ public extension NSObject
     }
 }
 
+public extension Encodable
+{
+    func uuToJsonString(_ prettyPrinted: Bool = false) -> String
+    {
+        let jsonData : Data? = uuToJson(prettyPrinted)
+        var jsonStr : String? = nil
+        
+        if (jsonData != nil)
+        {
+            jsonStr = String.init(data: jsonData!, encoding: .utf8)
+        }
+        
+        if (jsonStr == nil)
+        {
+            jsonStr = ""
+        }
+        
+        return jsonStr!
+    }
+    
+    func uuToJson(_ prettyPrinted: Bool = false) -> Data?
+    {
+        var data : Data? = nil
+        
+        let encoder = JSONEncoder()
+
+        do
+        {
+            if (prettyPrinted)
+            {
+                encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            }
+            else
+            {
+                encoder.outputFormatting = [.sortedKeys]
+            }
+            
+            data = try encoder.encode(self)
+        }
+        catch
+        {
+            data = nil
+        }
+        
+        
+        return data
+    }
+}
+
 public extension Dictionary
 {
     func uuToJsonString(_ prettyPrinted: Bool = false) -> String
