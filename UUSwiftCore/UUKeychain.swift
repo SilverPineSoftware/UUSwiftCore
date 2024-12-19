@@ -84,11 +84,13 @@ public class UUKeychain: NSObject
 		var result: CFTypeRef? = nil
 		let status = SecItemAdd(dictionary, &result)
 
-		if (status == errSecSuccess && result != nil) {
-			print("Successfully saved")
+		if (status == errSecSuccess && result != nil)
+        {
+            UUDebugLog("Successfully saved")
 		}
-		else {
-			print("Could not save password")
+		else
+        {
+            UUDebugLog("Could not save password")
 		}
 	}
 
