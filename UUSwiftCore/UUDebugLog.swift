@@ -30,6 +30,8 @@
 //
 public func UUDebugLog(function : NSString = #function, file : NSString = #file, line : Int = #line, _ format : String, _ args: CVarArg...)
 {
+    // Comment out for now
+    /*
 #if DEBUG
     withVaList(args,
     { (p : CVaListPointer) -> Void in
@@ -40,4 +42,5 @@ public func UUDebugLog(function : NSString = #function, file : NSString = #file,
         print(s)
     })
 #endif
+    */
 }
