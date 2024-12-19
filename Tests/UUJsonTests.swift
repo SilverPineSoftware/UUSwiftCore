@@ -6,6 +6,7 @@
 //
 
 import XCTest
+import UUSwiftCore
 
 final class UUJsonTests: XCTestCase
 {
@@ -14,7 +15,7 @@ final class UUJsonTests: XCTestCase
         let d = ["a": 1, "b": 2]
         let jsonString = d.uuToJsonString()
         XCTAssertNotNil(jsonString)
-        print("Dictionary as JSON: \(jsonString)")
+        UUDebugLog("Dictionary as JSON: \(jsonString)")
     }
     
     func testArrayToJsonString() throws
@@ -22,7 +23,7 @@ final class UUJsonTests: XCTestCase
         let a = ["foo", "bar", "baz"]
         let jsonString = a.uuToJsonString()
         XCTAssertNotNil(jsonString)
-        print("Array as JSON: \(jsonString)")
+        UUDebugLog("Array as JSON: \(jsonString)")
     }
     
     func testEncodableToJsonString() throws
@@ -42,6 +43,6 @@ final class UUJsonTests: XCTestCase
         let d = MyObject(a: 3, b: 4)
         let jsonString = d.uuToJsonString()
         XCTAssertNotNil(jsonString)
-        print("Encodable as JSON: \(jsonString)")
+        UUDebugLog("Encodable as JSON: \(jsonString)")
     }
 }

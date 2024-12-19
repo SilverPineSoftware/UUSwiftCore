@@ -70,19 +70,19 @@ public class UUTimer
     {
         if let src = dispatchSource
         {
-            //NSLog("Starting timer \(identifier), interval: \(interval), repeat: \(shouldRepeat), dispatchSource: \(String(describing: dispatchSource)), userInfo: \(String(describing: userInfo))")
+            //UUDebugLog("Starting timer \(identifier), interval: \(interval), repeat: \(shouldRepeat), dispatchSource: \(String(describing: dispatchSource)), userInfo: \(String(describing: userInfo))")
             pool.add(self)
             src.resume()
         }
         else
         {
-            //NSLog("Cannot start timer \(identifier) because dispatch source is nil")
+            //UUDebugLog("Cannot start timer \(identifier) because dispatch source is nil")
         }
     }
     
     public func cancel()
     {
-        //NSLog("Cancelling timer \(identifier), dispatchSource: \(String(describing: dispatchSource)), userInfo: \(String(describing: userInfo))")
+        //UUDebugLog("Cancelling timer \(identifier), dispatchSource: \(String(describing: dispatchSource)), userInfo: \(String(describing: userInfo))")
         
         if let src = dispatchSource
         {
@@ -175,14 +175,14 @@ public class UUTimerPool
     
     public func cancelAllTimers()
     {
-        NSLog("Cancelling all timers")
+        UUDebugLog("Cancelling all timers")
         
         let list = listActiveTimers()
-        NSLog("There are \(list.count) active timers")
+        UUDebugLog("There are \(list.count) active timers")
         
         list.forEach
         { t in
-            NSLog("Canceling timer \(t.identifier)")
+            UUDebugLog("Canceling timer \(t.identifier)")
             t.cancel()
         }
     }
