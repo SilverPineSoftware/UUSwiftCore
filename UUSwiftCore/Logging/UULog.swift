@@ -17,7 +17,7 @@ import Foundation
 /// ### Usage Example
 /// ```swift
 /// // Create a console logger instance.
-/// let consoleLogger = UUConsoleLogger()
+/// let consoleLogger = UULogger.console
 ///
 /// // Initialize UULog with the console logger.
 /// let log = UULog.init(consoleLogger)

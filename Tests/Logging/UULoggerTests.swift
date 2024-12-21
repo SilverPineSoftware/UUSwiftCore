@@ -8,22 +8,29 @@
 import XCTest
 @testable import UUSwiftCore
 
-/// A mock class to capture log messages instead of printing to the console.
-fileprivate class MockConsoleLogger: UUConsoleLogger
+fileprivate class MockLogWriter: UUConsoleLogWriter
 {
     var capturedLogLine: String?
 
     override func writeToLog(level: UULogLevel, tag: String, message: String)
     {
-        guard shouldLog(level: level) else
-        {
-            capturedLogLine = nil
-            return
-        }
-        
         capturedLogLine = formatLogLine(level: level, tag: tag, message: message)
-        
         super.writeToLog(level: level, tag: tag, message: message)
+    }
+}
+
+fileprivate class MockLogger: UULogger
+{
+    var mockWriter = MockLogWriter()
+    
+    init()
+    {
+        super.init(mockWriter)
+    }
+    
+    var capturedLogLine: String?
+    {
+        return mockWriter.capturedLogLine
     }
 }
 
@@ -42,7 +49,7 @@ fileprivate struct TestInput
         self.expectLogged = expectLogged
     }
     
-    func assertLogged(_ logger: MockConsoleLogger)
+    func assertLogged(_ logger: MockLogger)
     {
         XCTAssertNotNil(logger.capturedLogLine)
         XCTAssertTrue(logger.capturedLogLine?.contains(level.description) == true)
@@ -50,12 +57,12 @@ fileprivate struct TestInput
         XCTAssertTrue(logger.capturedLogLine?.contains(message) == true)
     }
     
-    func assertNotLogged(_ logger: MockConsoleLogger)
+    func assertNotLogged(_ logger: MockLogger)
     {
         XCTAssertNil(logger.capturedLogLine)
     }
     
-    func doTest(_ logger: MockConsoleLogger)
+    func doTest(_ logger: MockLogger)
     {
         logger.writeToLog(level: level, tag: tag, message: message)
         
@@ -72,7 +79,7 @@ fileprivate struct TestInput
 
 final class UUConsoleLoggerTests: XCTestCase
 {
-    private let logger = MockConsoleLogger()
+    private let logger = MockLogger()
     
     func testConsoleLogger_verbose() throws
     {
