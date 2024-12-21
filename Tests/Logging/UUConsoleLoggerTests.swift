@@ -15,8 +15,58 @@ fileprivate class MockConsoleLogger: UUConsoleLogger
 
     override func writeToLog(level: UULogLevel, tag: String, message: String)
     {
+        guard shouldLog(level: level) else
+        {
+            capturedLogLine = nil
+            return
+        }
+        
         capturedLogLine = formatLogLine(level: level, tag: tag, message: message)
+        
         super.writeToLog(level: level, tag: tag, message: message)
+    }
+}
+
+fileprivate struct TestInput
+{
+    var level: UULogLevel
+    var tag: String
+    var message: String
+    var expectLogged: Bool = true
+    
+    init(level: UULogLevel, tag: String, message: String, expectLogged: Bool)
+    {
+        self.level = level
+        self.tag = tag
+        self.message = message
+        self.expectLogged = expectLogged
+    }
+    
+    func assertLogged(_ logger: MockConsoleLogger)
+    {
+        XCTAssertNotNil(logger.capturedLogLine)
+        XCTAssertTrue(logger.capturedLogLine?.contains(level.description) == true)
+        XCTAssertTrue(logger.capturedLogLine?.contains(tag) == true)
+        XCTAssertTrue(logger.capturedLogLine?.contains(message) == true)
+    }
+    
+    func assertNotLogged(_ logger: MockConsoleLogger)
+    {
+        XCTAssertNil(logger.capturedLogLine)
+    }
+    
+    func doTest(_ logger: MockConsoleLogger)
+    {
+        logger.writeToLog(level: level, tag: tag, message: message)
+        
+        if expectLogged
+        {
+            assertLogged(logger)
+        }
+        else
+        {
+            assertNotLogged(logger)
+        }
     }
 }
 
@@ -24,31 +74,123 @@ final class UUConsoleLoggerTests: XCTestCase
 {
     private let logger = MockConsoleLogger()
     
-    func testConsoleLogger() throws
+    func testConsoleLogger_verbose() throws
     {
-        logger.writeToLog(level: .debug, tag: "UnitTest", message: "Hello World")
-        XCTAssertNotNil(logger.capturedLogLine)
-        XCTAssertTrue(logger.capturedLogLine?.contains("DEBUG") == true)
-        XCTAssertTrue(logger.capturedLogLine?.contains("UnitTest") == true)
-        XCTAssertTrue(logger.capturedLogLine?.contains("Hello World") == true)
+        logger.logLevel = .verbose
         
-        logger.writeToLog(level: .info, tag: "MyClass", message: "I Live In a Van Down by the River")
-        XCTAssertNotNil(logger.capturedLogLine)
-        XCTAssertTrue(logger.capturedLogLine?.contains("INFO") == true)
-        XCTAssertTrue(logger.capturedLogLine?.contains("MyClass") == true)
-        XCTAssertTrue(logger.capturedLogLine?.contains("I Live In a Van Down by the River") == true)
+        let td =
+        [
+            TestInput(level: .verbose, tag: "UnitTest", message: "Init Here", expectLogged: true),
+            TestInput(level: .debug, tag: "UnitTest", message: "Hello World", expectLogged: true),
+            TestInput(level: .info, tag: "MyClass", message: "I Live In a Van Down by the River", expectLogged: true),
+            TestInput(level: .warn, tag: "SomeService", message: "Whatever's Clever", expectLogged: true),
+            TestInput(level: .error, tag: "MyClass", message: "I Live In a Van Down by the River", expectLogged: true),
+            TestInput(level: .fatal, tag: "YoYo", message: "I like lamp", expectLogged: true),
+        ]
         
-        logger.writeToLog(level: .warn, tag: "SomeService", message: "Whatever's Clever")
-        XCTAssertNotNil(logger.capturedLogLine)
-        XCTAssertTrue(logger.capturedLogLine?.contains("WARN") == true)
-        XCTAssertTrue(logger.capturedLogLine?.contains("SomeService") == true)
-        XCTAssertTrue(logger.capturedLogLine?.contains("Whatever's Clever") == true)
-        
-        logger.writeToLog(level: .error, tag: "Whatever", message: "Red Rover Red Rover, Send Unit Tests right over!")
-        XCTAssertNotNil(logger.capturedLogLine)
-        XCTAssertTrue(logger.capturedLogLine?.contains("ERROR") == true)
-        XCTAssertTrue(logger.capturedLogLine?.contains("Whatever") == true)
-        XCTAssertTrue(logger.capturedLogLine?.contains("Red Rover Red Rover, Send Unit Tests right over!") == true)
+        for input in td
+        {
+            input.doTest(logger)
+        }
     }
-
+    
+    func testConsoleLogger_debug() throws
+    {
+        logger.logLevel = .debug
+        
+        let td =
+        [
+            TestInput(level: .verbose, tag: "UnitTest", message: "Init Here", expectLogged: false),
+            TestInput(level: .debug, tag: "UnitTest", message: "Hello World", expectLogged: true),
+            TestInput(level: .info, tag: "MyClass", message: "I Live In a Van Down by the River", expectLogged: true),
+            TestInput(level: .warn, tag: "SomeService", message: "Whatever's Clever", expectLogged: true),
+            TestInput(level: .error, tag: "MyClass", message: "I Live In a Van Down by the River", expectLogged: true),
+            TestInput(level: .fatal, tag: "YoYo", message: "I like lamp", expectLogged: true),
+        ]
+        
+        for input in td
+        {
+            input.doTest(logger)
+        }
+    }
+    
+    func testConsoleLogger_info() throws
+    {
+        logger.logLevel = .info
+        
+        let td =
+        [
+            TestInput(level: .verbose, tag: "UnitTest", message: "Init Here", expectLogged: false),
+            TestInput(level: .debug, tag: "UnitTest", message: "Hello World", expectLogged: false),
+            TestInput(level: .info, tag: "MyClass", message: "I Live In a Van Down by the River", expectLogged: true),
+            TestInput(level: .warn, tag: "SomeService", message: "Whatever's Clever", expectLogged: true),
+            TestInput(level: .error, tag: "MyClass", message: "I Live In a Van Down by the River", expectLogged: true),
+            TestInput(level: .fatal, tag: "YoYo", message: "I like lamp", expectLogged: true),
+        ]
+        
+        for input in td
+        {
+            input.doTest(logger)
+        }
+    }
+    
+    func testConsoleLogger_warn() throws
+    {
+        logger.logLevel = .warn
+        
+        let td =
+        [
+            TestInput(level: .verbose, tag: "UnitTest", message: "Init Here", expectLogged: false),
+            TestInput(level: .debug, tag: "UnitTest", message: "Hello World", expectLogged: false),
+            TestInput(level: .info, tag: "MyClass", message: "I Live In a Van Down by the River", expectLogged: false),
+            TestInput(level: .warn, tag: "SomeService", message: "Whatever's Clever", expectLogged: true),
+            TestInput(level: .error, tag: "MyClass", message: "I Live In a Van Down by the River", expectLogged: true),
+            TestInput(level: .fatal, tag: "YoYo", message: "I like lamp", expectLogged: true),
+        ]
+        
+        for input in td
+        {
+            input.doTest(logger)
+        }
+    }
+    
+    func testConsoleLogger_error() throws
+    {
+        logger.logLevel = .error
+        
+        let td =
+        [
+            TestInput(level: .verbose, tag: "UnitTest", message: "Init Here", expectLogged: false),
+            TestInput(level: .debug, tag: "UnitTest", message: "Hello World", expectLogged: false),
+            TestInput(level: .info, tag: "MyClass", message: "I Live In a Van Down by the River", expectLogged: false),
+            TestInput(level: .warn, tag: "SomeService", message: "Whatever's Clever", expectLogged: false),
+            TestInput(level: .error, tag: "MyClass", message: "I Live In a Van Down by the River", expectLogged: true),
+            TestInput(level: .fatal, tag: "YoYo", message: "I like lamp", expectLogged: true),
+        ]
+        
+        for input in td
+        {
+            input.doTest(logger)
+        }
+    }
+    
+    func testConsoleLogger_fatal() throws
+    {
+        logger.logLevel = .fatal
+        
+        let td =
+        [
+            TestInput(level: .verbose, tag: "UnitTest", message: "Init Here", expectLogged: false),
+            TestInput(level: .debug, tag: "UnitTest", message: "Hello World", expectLogged: false),
+            TestInput(level: .info, tag: "MyClass", message: "I Live In a Van Down by the River", expectLogged: false),
+            TestInput(level: .warn, tag: "SomeService", message: "Whatever's Clever", expectLogged: false),
+            TestInput(level: .error, tag: "MyClass", message: "I Live In a Van Down by the River", expectLogged: false),
+            TestInput(level: .fatal, tag: "YoYo", message: "I like lamp", expectLogged: true),
+        ]
+        
+        for input in td
+        {
+            input.doTest(logger)
+        }
+    }
 }
