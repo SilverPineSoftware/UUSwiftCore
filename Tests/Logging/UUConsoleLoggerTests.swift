@@ -193,4 +193,24 @@ final class UUConsoleLoggerTests: XCTestCase
             input.doTest(logger)
         }
     }
+    
+    func testConsoleLogger_off() throws
+    {
+        logger.logLevel = .off
+        
+        let td =
+        [
+            TestInput(level: .verbose, tag: "UnitTest", message: "Init Here", expectLogged: false),
+            TestInput(level: .debug, tag: "UnitTest", message: "Hello World", expectLogged: false),
+            TestInput(level: .info, tag: "MyClass", message: "I Live In a Van Down by the River", expectLogged: false),
+            TestInput(level: .warn, tag: "SomeService", message: "Whatever's Clever", expectLogged: false),
+            TestInput(level: .error, tag: "MyClass", message: "I Live In a Van Down by the River", expectLogged: false),
+            TestInput(level: .fatal, tag: "YoYo", message: "I like lamp", expectLogged: false),
+        ]
+        
+        for input in td
+        {
+            input.doTest(logger)
+        }
+    }
 }

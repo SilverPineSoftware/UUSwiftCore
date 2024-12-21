@@ -40,6 +40,9 @@ public enum UULogLevel: Int, CaseIterable, CustomStringConvertible
             
             case .fatal:
                 return "FATAL"
+            
+            case .off:
+                return "OFF"
         }
     }
     
@@ -71,4 +74,8 @@ public enum UULogLevel: Int, CaseIterable, CustomStringConvertible
     /// Represents critical issues that lead to the immediate termination of the application.
     /// Indicates a severe problem that must be addressed immediately.
     case fatal = 7
+    
+    /// Off logging level (8).
+    /// Disables all logging for this logger.
+    case off = 8
 }
