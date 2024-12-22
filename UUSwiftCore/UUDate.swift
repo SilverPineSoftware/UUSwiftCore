@@ -34,6 +34,8 @@ public struct UUDate
     {
         public static let rfc3339               = "yyyy-MM-dd'T'HH:mm:ss'Z'"
         public static let rfc3339WithMillis     = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+        public static let rfc3339WithTimeZone   = "yyyy-MM-dd'T'HH:mm:ssZ"
+        public static let rfc3339WithMillisTimeZone = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
         public static let iso8601DateOnly       = "yyyy-MM-dd"
         public static let iso8601TimeOnly       = "HH:mm:ss"
         public static let iso8601DateTime       = "yyyy-MM-dd HH:mm:ss"

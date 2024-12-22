@@ -15,6 +15,8 @@
 
 import CoreData
 
+fileprivate let LOG_TAG : String = "UUDataCache"
+
 // UUDataCacheProtocol defines a lightweight interface for caching of data
 // along with a meta data dictionary about each blob of data.
 public protocol UUDataCacheProtocol
@@ -119,7 +121,7 @@ public class UUDataCache : NSObject, UUDataCacheProtocol
         }
         catch (let err)
         {
-            UUDebugLog("Error moving URL into cache: %@", String(describing: err))
+            UULog.error(tag: LOG_TAG, message: "Error moving URL into cache: \(String(describing: err))")
         }
     }
     
@@ -167,7 +169,7 @@ public class UUDataCache : NSObject, UUDataCacheProtocol
         }
         catch (let err)
         {
-            UUDebugLog("Error creating cache path: %@", String(describing: err))
+            UULog.error(tag: LOG_TAG, message: "Error creating cache path: \(String(describing: err))")
         }
         
         UUDataCache.createFolderIfNeeded(cacheFolder)
@@ -235,7 +237,7 @@ public class UUDataCache : NSObject, UUDataCacheProtocol
             }
             catch (let err)
             {
-                UUDebugLog("Error creating folder: %@", String(describing: err))
+                UULog.error(tag: LOG_TAG, message: "Error creating folder: \(String(describing: err)))")
             }
         }
     }
@@ -307,7 +309,7 @@ public class UUDataCache : NSObject, UUDataCacheProtocol
         }
         catch (let err)
         {
-            UUDebugLog("Error saving data: %@", String(describing: err))
+            UULog.error(tag: LOG_TAG, message: "Error saving data: \(String(describing: err))")
         }
     }
         

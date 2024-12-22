@@ -7,6 +7,8 @@
 
 import Foundation
 
+fileprivate let LOG_TAG : String = "UUTimer"
+
 public typealias UUTimerBlock = ((UUTimer)->())
 public typealias UUWatchdogTimerBlock = ((Any?)->())
 
@@ -70,19 +72,19 @@ public class UUTimer
     {
         if let src = dispatchSource
         {
-            //UUDebugLog("Starting timer \(identifier), interval: \(interval), repeat: \(shouldRepeat), dispatchSource: \(String(describing: dispatchSource)), userInfo: \(String(describing: userInfo))")
+            UULog.verbose(tag: LOG_TAG, message: "Starting timer \(identifier), interval: \(interval), repeat: \(shouldRepeat), dispatchSource: \(String(describing: dispatchSource)), userInfo: \(String(describing: userInfo))")
             pool.add(self)
             src.resume()
         }
         else
         {
-            //UUDebugLog("Cannot start timer \(identifier) because dispatch source is nil")
+            UULog.verbose(tag: LOG_TAG, message: "Cannot start timer \(identifier) because dispatch source is nil")
         }
     }
     
     public func cancel()
     {
-        //UUDebugLog("Cancelling timer \(identifier), dispatchSource: \(String(describing: dispatchSource)), userInfo: \(String(describing: userInfo))")
+        UULog.verbose(tag: LOG_TAG, message: "Cancelling timer \(identifier), dispatchSource: \(String(describing: dispatchSource)), userInfo: \(String(describing: userInfo))")
         
         if let src = dispatchSource
         {
@@ -175,14 +177,14 @@ public class UUTimerPool
     
     public func cancelAllTimers()
     {
-        UUDebugLog("Cancelling all timers")
+        UULog.verbose(tag: LOG_TAG, message: "Cancelling all timers")
         
         let list = listActiveTimers()
-        UUDebugLog("There are \(list.count) active timers")
+        UULog.verbose(tag: LOG_TAG, message: "There are \(list.count) active timers")
         
         list.forEach
         { t in
-            UUDebugLog("Canceling timer \(t.identifier)")
+            UULog.verbose(tag: LOG_TAG, message: "Canceling timer \(t.identifier)")
             t.cancel()
         }
     }

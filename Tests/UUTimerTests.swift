@@ -31,7 +31,7 @@ class UUTimerTests: XCTestCase
             
             let end = Date.timeIntervalSinceReferenceDate
             let elapsed = end - lastStartTime
-            UUDebugLog("Timer \(timerId) Elapsed: \(elapsed)")
+            UUTestLog("Timer \(timerId) Elapsed: \(elapsed)")
             XCTAssertTrue(elapsed >= timeout)
             
             exp.fulfill()
@@ -76,7 +76,7 @@ class UUTimerTests: XCTestCase
             
             let end = Date.timeIntervalSinceReferenceDate
             let elapsed = end - lastStartTime
-            UUDebugLog("Timer \(timerId) Elapsed: \(elapsed)")
+            UUTestLog("Timer \(timerId) Elapsed: \(elapsed)")
             XCTAssertTrue(elapsed >= timeout)
             
             exp.fulfill()
@@ -128,7 +128,7 @@ class UUTimerTests: XCTestCase
             //XCTAssertTrue(elapsed >= timeout)
             
             fireCount = fireCount + 1
-            UUDebugLog("Timer FireCount: \(fireCount), elapsed: \(elapsed)")
+            UUTestLog("Timer FireCount: \(fireCount), elapsed: \(elapsed)")
             
             lastStartTime = Date.timeIntervalSinceReferenceDate
             
@@ -256,7 +256,7 @@ class UUTimerTests: XCTestCase
             UUTimerPool.shared.start(identifier: timerId, timeout: timeout, userInfo: info)
             { result in
                 
-                UUDebugLog("Timer \(i) triggered")
+                UUTestLog("Timer \(i) triggered")
                 XCTAssertNotNil(result)
                 XCTAssertEqual(info, result as? Int32)
                 exp.fulfill()

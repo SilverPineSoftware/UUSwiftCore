@@ -27,6 +27,6 @@ final class UUTimeMeasurementTests: XCTestCase
         
         XCTAssertTrue(duration >= sleepTime)
         
-        UUDebugLog("\(measurement)")
+        UUTestLog("\(measurement)")
     }
 }
