@@ -11,7 +11,10 @@
 import Foundation
 import Security
 
+fileprivate let LOG_TAG : String = "UUKeychain"
+
 public let UUKeychainErrorDomain = "UUKeychainErrorDomain"
+
 
 public class UUKeychain: NSObject
 {
@@ -86,11 +89,11 @@ public class UUKeychain: NSObject
 
 		if (status == errSecSuccess && result != nil)
         {
-            UUDebugLog("Successfully saved")
+            UULog.debug(tag: LOG_TAG, message: "Successfully saved")
 		}
 		else
         {
-            UUDebugLog("Could not save password")
+            UULog.error(tag: LOG_TAG, message: "Could not save password")
 		}
 	}
 

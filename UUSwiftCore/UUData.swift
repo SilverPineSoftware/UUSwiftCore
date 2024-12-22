@@ -12,6 +12,8 @@
 	import UIKit
 #endif
 
+fileprivate let LOG_TAG : String = "UUData"
+
 public extension Data
 {
     // Return hex string representation of data
@@ -41,7 +43,7 @@ public extension Data
         }
         catch (let err)
         {
-            UUDebugLog("Error deserializing JSON: %@", String(describing: err))
+            UULog.error(tag: LOG_TAG, message: "Error deserializing JSON: \(String(describing: err))")
         }
         
         return nil

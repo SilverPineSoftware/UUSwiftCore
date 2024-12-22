@@ -8,6 +8,8 @@
 import Darwin
 import Foundation
 
+fileprivate let LOG_TAG : String = "UUThread"
+
 public class UUThreadSafeArray<T:Equatable>: NSObject
 {
     private var nativeObject: Array<T> = Array()
@@ -197,7 +199,7 @@ public class UUMutexWrapper: NSObject
 		var result = pthread_mutexattr_init(&attr)
 		guard result == 0 else
 		{
-			UUDebugLog("pthread_mutexattr_init failed!")
+            UULog.error(tag: LOG_TAG, message: "pthread_mutexattr_init failed!")
 			return
 		}
 		
@@ -206,7 +208,7 @@ public class UUMutexWrapper: NSObject
 		result = pthread_mutex_init(&mutex, &attr)
 		guard result == 0 else
 		{
-			UUDebugLog("pthread_mutex_init failed!")
+            UULog.error(tag: LOG_TAG, message: "pthread_mutex_init failed!")
 			return
 		}
 		
