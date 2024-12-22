@@ -37,6 +37,50 @@ open class UULogger
     /// - Note: This property allows developers to dynamically control the verbosity of logs during runtime.
     public var logLevel: UULogLevel = .off
     
+    /// A list of tags that should be explicitly included in the log output.
+    ///
+    /// When this property is set with one or more tags, only log messages with matching tags will be logged.
+    /// If the list is empty, all tags are included by default unless explicitly excluded by `excludedTags`.
+    ///
+    /// ### Usage
+    /// - Use this property to filter logs based on specific tags of interest.
+    /// - Setting this property overrides the default behavior of including all tags.
+    ///
+    /// ### Example
+    /// ```swift
+    /// var logger: UULogger = SomeLoggerImplementation()
+    /// logger.includedTags = ["Networking", "Database"]
+    ///
+    /// // Only log messages with "Networking" or "Database" tags will be logged.
+    /// logger.writeToLog(level: .info, tag: "Networking", message: "Request started") // Logged
+    /// logger.writeToLog(level: .info, tag: "UI", message: "Button clicked") // Ignored
+    /// ```
+    ///
+    /// - Note: The `includedTags` property works in conjunction with `excludedTags`. If a tag is present in both, it will be excluded.
+    public var includedTags: [String] = []
+
+    /// A list of tags that should be explicitly excluded from the log output.
+    ///
+    /// When this property is set with one or more tags, log messages with matching tags will be ignored,
+    /// regardless of whether the tags are present in `includedTags`.
+    ///
+    /// ### Usage
+    /// - Use this property to suppress logs from specific tags that are not relevant or needed.
+    /// - By default, no tags are excluded.
+    ///
+    /// ### Example
+    /// ```swift
+    /// var logger: UULogger = SomeLoggerImplementation()
+    /// logger.excludedTags = ["Debug", "Verbose"]
+    ///
+    /// // Messages with "Debug" or "Verbose" tags will be ignored.
+    /// logger.writeToLog(level: .info, tag: "Debug", message: "This will not be logged") // Ignored
+    /// logger.writeToLog(level: .info, tag: "Networking", message: "Request started") // Logged
+    /// ```
+    ///
+    /// - Note: The `excludedTags` property has higher priority than `includedTags`. If a tag is in both lists, it will be excluded.
+    public var excludedTags: [String] = []
+    
     /// The log writer responsible for handling the output of log messages.
     ///
     /// This property allows you to customize how and where log messages are written.
@@ -88,6 +132,29 @@ public extension UULogger
         return level.rawValue >= self.logLevel.rawValue
     }
     
+    /// Checks whether a given log tag should be writen.
+    ///
+    /// If a tag is in the excluded list, it is not logged.
+    /// If the include list is non empty, the tag is logged only if it is in the list.
+    /// If none of the above conditions are true, the tag is logged.
+    ///
+    /// - Parameters:
+    ///   - tag: A `String` identifier that categorizes the log message, such as a component or module name.
+    func shouldLog(tag: String) -> Bool
+    {
+        if (excludedTags.contains(tag))
+        {
+            return false
+        }
+        
+        if !includedTags.isEmpty
+        {
+            return includedTags.contains(tag)
+        }
+        
+        return true
+    }
+    
     /// Writes a log entry with the specified log level, tag, and formatted message.  The log message is only written
     /// if level is >= `currentLogLevel`
     ///
@@ -102,6 +169,11 @@ public extension UULogger
     func writeToLog(level: UULogLevel, tag: String, message: String)
     {
         guard shouldLog(level: level) else
+        {
+            return
+        }
+        
+        guard shouldLog(tag: tag) else
         {
             return
         }
