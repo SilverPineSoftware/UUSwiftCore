@@ -33,6 +33,14 @@ public extension Data
         return sb as String
     }
     
+    /// Returns a space-separated binary string of each byte.
+    func uuToBinaryString() -> String
+    {
+        return self
+            .map { $0.uuToBinaryString() }
+            .joined(separator: " ")
+    }
+    
     // Return JSON object of the data
     //
     func uuToJson() -> Any?

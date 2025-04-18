@@ -298,3 +298,21 @@ public extension String
     
     #endif
 }
+
+public extension FixedWidthInteger
+{
+    /// Returns an N‑character string of `0`/`1` bits (two’s‑compliment),
+    /// where N == Self.bitWidth (e.g. 8 for UInt8, 32 for Int32, etc.)
+    func uuToBinaryString() -> String
+    {
+        var result = ""
+        result.reserveCapacity(Self.bitWidth)
+        for bit in (0..<Self.bitWidth).reversed()
+        {
+            let mask = Self(1) << bit
+            result.append((self & mask) != 0 ? "1" : "0")
+        }
+        
+        return result
+    }
+}
