@@ -7,11 +7,7 @@
 //  The only requirement is that you smile everytime you use it.
 //
 
-#if os(macOS)
-	import AppKit
-#else
-	import UIKit
-#endif
+import Foundation
 
 fileprivate let kUUSecondsPerDay: TimeInterval = (60 * 60 * 24)
 

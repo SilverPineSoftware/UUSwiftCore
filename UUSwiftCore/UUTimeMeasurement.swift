@@ -5,7 +5,7 @@
 //  Created by Ryan DeVore on 11/30/24.
 //
 
-import UIKit
+import Foundation
 
 // Container for recording simple timed measurements
 open class UUTimeMeasurement

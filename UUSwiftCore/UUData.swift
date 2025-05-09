@@ -6,11 +6,7 @@
 //  You are free to use this code for whatever purposes you desire.
 //  The only requirement is that you smile everytime you use it.
 //
-#if os(macOS)
-	import AppKit
-#else
-	import UIKit
-#endif
+import Foundation
 
 fileprivate let LOG_TAG : String = "UUData"
 
