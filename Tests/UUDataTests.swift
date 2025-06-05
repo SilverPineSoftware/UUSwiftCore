@@ -731,4 +731,23 @@ class UUDataTests: XCTestCase
             XCTAssertEqual(td.2, actualHex)
         }
     }
+    
+    func test_uuPadded() throws
+    {
+        let testData: [(String,Int,String)] =
+        [
+            ("1122", 4, "11220000"),
+            ("1122", 2, "1122"),
+            ("1122", 1, "11"),
+        ]
+        
+        for td in testData
+        {
+            let input = try XCTUnwrap(td.0.uuToHexData() as Data?)
+            
+            let actual = input.uuPadded(toLength: td.1)
+            let actualHex = actual.uuToHexString()
+            XCTAssertEqual(td.2, actualHex)
+        }
+    }
 }

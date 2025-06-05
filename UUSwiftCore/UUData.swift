@@ -157,6 +157,26 @@ public extension Data
         return String(bytes: data, encoding: encoding)
     }
     
+    /// Returns a new Data that is exactly `toLength` bytes long,
+    /// padding with 0x00 bytes on the right if needed, or truncating
+    /// if self.count > toLength.
+    ///
+    /// - Parameter toLength: Desired total length.
+    /// - Returns: A Data of length `toLength`.
+    func uuPadded(toLength: Int) -> Data
+    {
+        // If already longer, just truncate:
+        if count >= toLength
+        {
+            return self.prefix(toLength)
+        }
+        
+        // Otherwise, append zero bytes:
+        var result = self
+        result.append(Data(count: toLength - count))
+        return result
+    }
+    
     // MARK: Safe gettors
     
     func uuSafeData(at index: Int, count: Int) -> Data
