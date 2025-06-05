@@ -750,4 +750,26 @@ class UUDataTests: XCTestCase
             XCTAssertEqual(td.2, actualHex)
         }
     }
+    
+    func test_uuXor() throws
+    {
+        let testData: [(String,String,String)] =
+        [
+            ("1122", "0000", "1122"),
+            ("1122", "FFFF", "EEDD"),
+            ("1122", "22",   "1122"),
+            ("1122", "223344", "1122"),
+            ("5050", "0707", "5757"),
+        ]
+        
+        for td in testData
+        {
+            let inputA = try XCTUnwrap(td.0.uuToHexData() as Data?)
+            let inputB = try XCTUnwrap(td.1.uuToHexData() as Data?)
+            
+            let actual = inputA.uuXor(with: inputB)
+            let actualHex = actual.uuToHexString()
+            XCTAssertEqual(td.2, actualHex)
+        }
+    }
 }

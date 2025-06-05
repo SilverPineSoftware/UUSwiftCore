@@ -177,6 +177,26 @@ public extension Data
         return result
     }
     
+    /// Returns a new `Data` where each byte is the XOR of the corresponding bytes
+    /// in `self` and `other`. Both Data objects must be the same length.
+    ///
+    /// - Parameter other: The Data to XOR against.
+    /// - Returns: A new Data containing the XOR result.
+    func uuXor(with other: Data) -> Data
+    {
+        var buffer = Data(self)
+        
+        if (buffer.count == other.count)
+        {
+            for i in self.indices
+            {
+                buffer.uuReplace(UInt8(self[i] ^ other[i]), at: i)
+            }
+        }
+        
+        return buffer
+    }
+    
     // MARK: Safe gettors
     
     func uuSafeData(at index: Int, count: Int) -> Data
