@@ -177,6 +177,29 @@ public extension Data
         return result
     }
     
+    /// Returns a new `Data` whose length is padded with 0x00 bytes
+    /// up to the next multiple of `blockSize`. If `self.count` is already
+    /// a multiple of `blockSize`, returns `self` unchanged.
+    ///
+    /// - Parameter blockSize: The block size to pad to (must be > 0).
+    /// - Returns: A `Data` object whose length is a multiple of `blockSize`.
+    func uuPadded(toBlockSize blockSize: Int) -> Data
+    {
+        let remainder = count % blockSize
+        
+        // If already aligned, no padding needed
+        guard remainder != 0 else
+        {
+            return self
+        }
+        
+        // Number of zero bytes to append
+        let padCount = blockSize - remainder
+        var result = self
+        result.append(Data(count: padCount))
+        return result
+    }
+    
     /// Returns a new `Data` where each byte is the XOR of the corresponding bytes
     /// in `self` and `other`. Both Data objects must be the same length.
     ///

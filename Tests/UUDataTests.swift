@@ -751,6 +751,25 @@ class UUDataTests: XCTestCase
         }
     }
     
+    func test_uuPaddedToBlockSize() throws
+    {
+        let testData: [(String,Int,String)] =
+        [
+            ("1122", 8, "1122000000000000"),
+            ("1122", 2, "1122"),
+            ("1122", 7, "11220000000000"),
+        ]
+        
+        for td in testData
+        {
+            let input = try XCTUnwrap(td.0.uuToHexData() as Data?)
+            
+            let actual = input.uuPadded(toBlockSize: td.1)
+            let actualHex = actual.uuToHexString()
+            XCTAssertEqual(td.2, actualHex)
+        }
+    }
+    
     func test_uuXor() throws
     {
         let testData: [(String,String,String)] =
