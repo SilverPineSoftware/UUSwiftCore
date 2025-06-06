@@ -772,4 +772,42 @@ class UUDataTests: XCTestCase
             XCTAssertEqual(td.2, actualHex)
         }
     }
+    
+    func test_uuReset() throws
+    {
+        let testData: [(String,String)] =
+        [
+            ("1122", "0000"),
+            ("abcdef", "000000")
+        ]
+        
+        for td in testData
+        {
+            var input = try XCTUnwrap(td.0.uuToHexData() as Data?)
+            
+            input.uuReset()
+            let actualHex = input.uuToHexString()
+            XCTAssertEqual(td.1, actualHex)
+        }
+        
+    }
+    
+    func test_uuSetAll() throws
+    {
+        let testData: [(String, UInt8, String)] =
+        [
+            ("1122", UInt8(0x57), "5757"),
+            ("abcdef", UInt8(0), "000000"),
+            ("abcdef", UInt8(0xA), "0A0A0A")
+        ]
+        
+        for td in testData
+        {
+            var input = try XCTUnwrap(td.0.uuToHexData() as Data?)
+            
+            input.uuSetAll(to: td.1)
+            let actualHex = input.uuToHexString()
+            XCTAssertEqual(td.2, actualHex)
+        }
+    }
 }

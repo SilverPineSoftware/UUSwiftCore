@@ -272,6 +272,28 @@ public extension Data
         }
     }
     
+    /// Sets every byte in this `Data` instance to zero.
+    ///
+    /// This method uses `resetBytes(in:)` to overwrite all bytes
+    /// in the range `0..<count` with `0x00`. After calling this,
+    /// the entire buffer is cleared.
+    mutating func uuReset()
+    {
+        resetBytes(in: 0..<self.count)
+    }
+
+    /// Sets every byte in this `Data` instance to a specified value.
+    ///
+    /// - Parameter value: The `UInt8` value to write into each byte.
+    ///
+    /// This method replaces the entire contents of `self` (range `0..<count`)
+    /// with a sequence of `count` copies of `value`. After calling this,
+    /// every byte in the buffer will equal `value`.
+    mutating func uuSetAll(to value: UInt8)
+    {
+        replaceSubrange(0..<self.count, with: repeatElement(value, count: self.count))
+    }
+    
     // MARK: Nibble Support
     
     func uuHighNibble(at index: Int) -> UInt8?
