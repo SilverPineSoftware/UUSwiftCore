@@ -29,4 +29,22 @@ public extension FixedWidthInteger
         
         return self
     }
+    
+    /// The number of bytes required to store values of this integer **type**.
+    ///
+    /// This is equivalent to calling `MemoryLayout<Self>.size`.
+    ///
+    static var uuByteSize: Int
+    {
+        MemoryLayout<Self>.size
+    }
+
+    /// The number of bytes required to store this integer **instance**.
+    ///
+    /// This is equivalent to calling `MemoryLayout.size(ofValue:)`.
+    ///
+    var uuByteSize: Int
+    {
+        MemoryLayout<Self>.size
+    }
 }
