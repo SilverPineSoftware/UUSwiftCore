@@ -7,6 +7,7 @@
 
 import Foundation
 
+public typealias UUVoidBlock = (() -> Void)
 public typealias UUErrorBlock = ((Error?) -> Void)
 public typealias UUObjectErrorBlock<T> = ((T?, Error?) -> Void)
 public typealias UUListErrorBlock<T> = (([T]?, Error?) -> Void)
