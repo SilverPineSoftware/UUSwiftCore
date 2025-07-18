@@ -33,4 +33,9 @@ public extension UULogger
     {
         return UULogger(UUConsoleLogWriter())
     }
+    
+    static var print: UULogger
+    {
+        return UULogger(UUPrintLogWriter())
+    }
 }
