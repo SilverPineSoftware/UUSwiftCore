@@ -755,6 +755,34 @@ public extension UUCoreData
     }
 }*/
 
+protocol UUCoreDataCodableMapping
+{
+    func uuFillFromCodable(from: Codable, context: NSManagedObjectContext)
+}
+
+public extension NSManagedObject
+{
+    static func uuCreate<T: Codable>(from: T, in context: NSManagedObjectContext) -> Self
+    {
+        let entity = Self(context: context)
+        
+        if let mappable = self as? (any UUCoreDataCodableMapping)
+        {
+            mappable.uuFillFromCodable(from: from, context: context)
+        }
+        
+        return entity
+    }
+    
+    static func uuCreateSet(from: [Codable], in context: NSManagedObjectContext) -> NSSet
+    {
+        return NSSet(array: from.compactMap({ obj in
+            uuCreate(from: obj, in: context)
+        }))
+    }
+}
+
+
 
 public extension NSManagedObject
 {
