@@ -755,7 +755,7 @@ public extension UUCoreData
     }
 }*/
 
-protocol UUCoreDataCodableMapping
+public protocol UUCoreDataCodableMapping
 {
     func uuFillFromCodable(from: Codable, context: NSManagedObjectContext)
 }
