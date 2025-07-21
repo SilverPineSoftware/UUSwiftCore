@@ -766,7 +766,7 @@ public extension NSManagedObject
     {
         let entity = Self(context: context)
         
-        if let mappable = self as? (any UUCoreDataCodableMapping)
+        if let mappable = entity as? (any UUCoreDataCodableMapping)
         {
             mappable.uuFillFromCodable(from: from, context: context)
         }
