@@ -910,16 +910,6 @@ public class UUCoreDataStack
         self.folder = folder
     }
     
-    var storeUrl: URL?
-    {
-        let storeFileName = "\(modelFileName).sqlite"
-        
-        return FileManager.default
-          .urls(for: .libraryDirectory, in: .userDomainMask)
-          .first?
-          .appendingPathComponent(storeFileName)
-    }
-    
     public var storeFileName: String
     {
         return "\(modelFileName).sqlite"
