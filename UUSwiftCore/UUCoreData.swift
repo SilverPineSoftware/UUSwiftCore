@@ -760,7 +760,7 @@ public protocol UUCoreDataCodableMapping
     func uuFillFromCodable(
         from: Codable,
         context: NSManagedObjectContext,
-        appContext: Any?)
+        appContext: inout Any?)
 }
 
 public extension NSManagedObject
@@ -768,13 +768,13 @@ public extension NSManagedObject
     static func uuCreate<T: Codable>(
         from: T,
         in context: NSManagedObjectContext,
-        with appContext: Any? = nil) -> Self
+        with appContext: inout Any?) -> Self
     {
         let entity = Self(context: context)
         
         if let mappable = entity as? (any UUCoreDataCodableMapping)
         {
-            mappable.uuFillFromCodable(from: from, context: context, appContext: appContext)
+            mappable.uuFillFromCodable(from: from, context: context, appContext: &appContext)
         }
         
         return entity
@@ -783,20 +783,44 @@ public extension NSManagedObject
     static func uuCreateArray<T: Codable, Entity: NSManagedObject>(
         from: [T],
         in context: NSManagedObjectContext,
-        with appContext: Any? = nil) -> [Entity]
+        with appContext: inout Any?) -> [Entity]
     {
         return from.compactMap
         {
-            uuCreate(from: $0, in: context, with: appContext) as? Entity
+            uuCreate(from: $0, in: context, with: &appContext) as? Entity
         }
     }
     
     static func uuCreateSet<T: Codable, Entity: NSManagedObject>(
         from: [T],
         in context: NSManagedObjectContext,
-        with appContext: Any? = nil) -> Set<Entity>
+        with appContext: inout Any?) -> Set<Entity>
     {
-        return Set(uuCreateArray(from: from, in: context, with: appContext))
+        return Set(uuCreateArray(from: from, in: context, with: &appContext))
+    }
+    
+    static func uuCreate<T: Codable>(
+        from: T,
+        in context: NSManagedObjectContext) -> Self
+    {
+        var devNull: Any? = nil
+        return uuCreate(from: from, in: context, with: &devNull)
+    }
+    
+    static func uuCreateArray<T: Codable, Entity: NSManagedObject>(
+        from: [T],
+        in context: NSManagedObjectContext) -> [Entity]
+    {
+        var devNull: Any? = nil
+        return uuCreateArray(from: from, in: context, with: &devNull)
+    }
+    
+    static func uuCreateSet<T: Codable, Entity: NSManagedObject>(
+        from: [T],
+        in context: NSManagedObjectContext) -> Set<Entity>
+    {
+        var devNull: Any? = nil
+        return uuCreateSet(from: from, in: context, with: &devNull)
     }
 }
 
