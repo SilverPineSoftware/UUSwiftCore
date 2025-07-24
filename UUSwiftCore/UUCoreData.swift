@@ -845,7 +845,7 @@ public class UUCoreDataStack
     public private(set) var modelFileName: String
     public private(set) var storeTye: String
     public private(set) var autoMigrate: Bool = true
-    public private(set) var exlcudeFromBackup: Bool = false
+    public private(set) var excludeFromBackup: Bool = false
     public private(set) var folder: FileManager.SearchPathDirectory = .applicationSupportDirectory
     
     private var persistenceContainer: NSPersistentContainer? = nil
@@ -864,7 +864,7 @@ public class UUCoreDataStack
         self.modelBundle = modelBundle
         self.storeTye = storeType
         self.autoMigrate = autoMigrate
-        self.exlcudeFromBackup = excludeFromBackup
+        self.excludeFromBackup = excludeFromBackup
         self.folder = folder
     }
     
@@ -917,21 +917,6 @@ public class UUCoreDataStack
 
         var storeURL = self.storeURL
         
-        // Configure the file's backup flags
-        var resourceValues = URLResourceValues()
-        resourceValues.isExcludedFromBackup = exlcudeFromBackup
-        
-        do
-        {
-            try storeURL.setResourceValues(resourceValues)
-        }
-        catch let err
-        {
-            let err = makeError(.unableToSetBackupPropertyOnStoreFile, underlyingError: err)
-            completion(err)
-            return
-        }
-        
         let description = NSPersistentStoreDescription(url: storeURL)
         description.type = storeTye
 
@@ -953,6 +938,21 @@ public class UUCoreDataStack
             {
                 let wrappedError = self.makeError(.loadPersistentStoresFailed, underlyingError: err)
                 completion(wrappedError)
+                return
+            }
+            
+            // Configure the file's backup flags
+            var resourceValues = URLResourceValues()
+            resourceValues.isExcludedFromBackup = self.excludeFromBackup
+            
+            do
+            {
+                try storeURL.setResourceValues(resourceValues)
+            }
+            catch let err
+            {
+                let err = self.makeError(.unableToSetBackupPropertyOnStoreFile, underlyingError: err)
+                completion(err)
                 return
             }
             
