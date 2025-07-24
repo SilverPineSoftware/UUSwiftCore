@@ -757,28 +757,46 @@ public extension UUCoreData
 
 public protocol UUCoreDataCodableMapping
 {
-    func uuFillFromCodable(from: Codable, context: NSManagedObjectContext)
+    func uuFillFromCodable(
+        from: Codable,
+        context: NSManagedObjectContext,
+        appContext: Any?)
 }
 
 public extension NSManagedObject
 {
-    static func uuCreate<T: Codable>(from: T, in context: NSManagedObjectContext) -> Self
+    static func uuCreate<T: Codable>(
+        from: T,
+        in context: NSManagedObjectContext,
+        with appContext: Any? = nil) -> Self
     {
         let entity = Self(context: context)
         
         if let mappable = entity as? (any UUCoreDataCodableMapping)
         {
-            mappable.uuFillFromCodable(from: from, context: context)
+            mappable.uuFillFromCodable(from: from, context: context, appContext: appContext)
         }
         
         return entity
     }
     
-    static func uuCreateSet<T: Codable>(from: [T], in context: NSManagedObjectContext) -> NSSet
+    static func uuCreateArray<T: Codable, Entity: NSManagedObject>(
+        from: [T],
+        in context: NSManagedObjectContext,
+        with appContext: Any? = nil) -> [Entity]
     {
-        return NSSet(array: from.compactMap({ obj in
-            uuCreate(from: obj, in: context)
-        }))
+        return from.compactMap
+        {
+            uuCreate(from: $0, in: context, with: appContext) as? Entity
+        }
+    }
+    
+    static func uuCreateSet<T: Codable, Entity: NSManagedObject>(
+        from: [T],
+        in context: NSManagedObjectContext,
+        with appContext: Any? = nil) -> Set<Entity>
+    {
+        return Set(uuCreateArray(from: from, in: context, with: appContext))
     }
 }
 
