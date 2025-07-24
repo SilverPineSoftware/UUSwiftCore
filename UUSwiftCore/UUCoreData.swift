@@ -774,7 +774,7 @@ public extension NSManagedObject
         return entity
     }
     
-    static func uuCreateSet(from: [Codable], in context: NSManagedObjectContext) -> NSSet
+    static func uuCreateSet<T: Codable>(from: [T], in context: NSManagedObjectContext) -> NSSet
     {
         return NSSet(array: from.compactMap({ obj in
             uuCreate(from: obj, in: context)
@@ -798,7 +798,7 @@ public enum UUCoreDataErrorCode: Int
 {
     case modelFileNotFound = 0
     case unableToLoadModel = 1
-    case unableToCreateStoreUrl = 2
+    case unableToSetBackupPropertyOnStoreFile = 2
     case failedToLoadPersistentContainer = 3
     case persistentContainerNotOpen = 4
     case loadPersistentStoresFailed = 5
@@ -818,8 +818,8 @@ public extension UUCoreDataErrorCode
             case .unableToLoadModel:
                 return "Unable to load model."
             
-            case .unableToCreateStoreUrl:
-                return "Unable to create store URL."
+            case .unableToSetBackupPropertyOnStoreFile:
+                return "Unable to set backup property on store file."
             
             case .failedToLoadPersistentContainer:
                 return "Failed to load persistent container."
@@ -845,6 +845,8 @@ public class UUCoreDataStack
     public private(set) var modelFileName: String
     public private(set) var storeTye: String
     public private(set) var autoMigrate: Bool = true
+    public private(set) var exlcudeFromBackup: Bool = false
+    public private(set) var folder: FileManager.SearchPathDirectory = .applicationSupportDirectory
     
     private var persistenceContainer: NSPersistentContainer? = nil
     
@@ -854,12 +856,45 @@ public class UUCoreDataStack
         modelFileName: String,
         modelBundle: Bundle = Bundle(for: UUCoreDataStack.self),
         storeType: String = NSSQLiteStoreType,
-        autoMigrate: Bool = true)
+        autoMigrate: Bool = true,
+        excludeFromBackup: Bool = false,
+        folder: FileManager.SearchPathDirectory = .applicationSupportDirectory)
     {
         self.modelFileName = modelFileName
         self.modelBundle = modelBundle
         self.storeTye = storeType
         self.autoMigrate = autoMigrate
+        self.exlcudeFromBackup = excludeFromBackup
+        self.folder = folder
+    }
+    
+    var storeUrl: URL?
+    {
+        let storeFileName = "\(modelFileName).sqlite"
+        
+        return FileManager.default
+          .urls(for: .libraryDirectory, in: .userDomainMask)
+          .first?
+          .appendingPathComponent(storeFileName)
+    }
+    
+    public var storeFileName: String
+    {
+        return "\(modelFileName).sqlite"
+    }
+    
+    public var storeFolder: URL
+    {
+        // Apple example code forcibly grabs the first folder.  For built in system folders
+        // this is considered 'safe' so we'll assume that here.
+        return FileManager
+            .default
+            .urls(for: folder, in: .userDomainMask)[0]
+    }
+    
+    public var storeURL: URL
+    {
+        return storeFolder.appendingPathComponent(storeFileName)
     }
     
     public func open(_ completion: @escaping ((Error?) -> Void))
@@ -880,14 +915,19 @@ public class UUCoreDataStack
         
         let container = NSPersistentContainer(name: modelFileName, managedObjectModel: model)
 
-        let storeFileName = "\(modelFileName).sqlite"
+        var storeURL = self.storeURL
         
-        guard let storeURL = FileManager.default
-          .urls(for: .libraryDirectory, in: .userDomainMask)
-          .first?
-          .appendingPathComponent(storeFileName) else
+        // Configure the file's backup flags
+        var resourceValues = URLResourceValues()
+        resourceValues.isExcludedFromBackup = exlcudeFromBackup
+        
+        do
         {
-            let err = makeError(.unableToCreateStoreUrl)
+            try storeURL.setResourceValues(resourceValues)
+        }
+        catch let err
+        {
+            let err = makeError(.unableToSetBackupPropertyOnStoreFile, underlyingError: err)
             completion(err)
             return
         }
@@ -928,22 +968,16 @@ public class UUCoreDataStack
     
     public func reset(_ completion: @escaping ((Error?) -> Void))
     {
-        let storeUrls: [URL] = persistenceContainer?.persistentStoreCoordinator.persistentStores.compactMap(\.url) ?? []
-        let fm = FileManager.default
-        
         var resultError: Error? = nil
         
-        for url in storeUrls
+        do
         {
-            do
-            {
-                UULog.debug(tag: LOG_TAG, message: "Deleting store file at \(url)")
-                try fm.removeItem(at: url)
-            }
-            catch let err
-            {
-                resultError = makeError(.deleteStoreFailed, underlyingError: err)
-            }
+            UULog.debug(tag: LOG_TAG, message: "Deleting store file at \(storeURL)")
+            try FileManager.default.removeItem(at: storeURL)
+        }
+        catch let err
+        {
+            resultError = makeError(.deleteStoreFailed, underlyingError: err)
         }
         
         persistenceContainer = nil
