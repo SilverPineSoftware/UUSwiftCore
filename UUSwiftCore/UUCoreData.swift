@@ -977,7 +977,16 @@ public class UUCoreDataStack
         }
         catch let err
         {
-            resultError = makeError(.deleteStoreFailed, underlyingError: err)
+            // If the file isn't found, just ignore the error
+            let nsErr = err as NSError
+            if (nsErr.domain == NSCocoaErrorDomain && nsErr.code == NSFileNoSuchFileError)
+            {
+                resultError = nil
+            }
+            else
+            {
+                resultError = makeError(.deleteStoreFailed, underlyingError: err)
+            }
         }
         
         persistenceContainer = nil
