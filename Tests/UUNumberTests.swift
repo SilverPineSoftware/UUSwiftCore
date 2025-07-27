@@ -13,6 +13,8 @@ import UUSwiftTestCore
 
 final class UUNumberTests: XCTestCase
 {
+    // MARK: uuClamp tests
+    
     func test_uuClamp_inRange() throws
     {
         let input: Int = 10
@@ -48,6 +50,8 @@ final class UUNumberTests: XCTestCase
         XCTAssertEqual(8, clamped)
     }
     
+    // MARK: uuByteSize tests
+    
     func test_uuByteSize_static() throws
     {
         XCTAssertEqual(8, UInt64.uuByteSize)
@@ -71,4 +75,169 @@ final class UUNumberTests: XCTestCase
         XCTAssertEqual(1, UInt8(0).uuByteSize)
         XCTAssertEqual(1, Int8(0).uuByteSize)
     }
+    
+    // MARK: uuClearingBit tests
+    
+    struct BitTwiddlingTestInput<NumberType: FixedWidthInteger>
+    {
+        let input: NumberType
+        let expected: NumberType
+        let index: Int
+        
+        init(_ input: NumberType, _ expected: NumberType, _ index: Int)
+        {
+            self.input = input
+            self.expected = expected
+            self.index = index
+        }
+    }
+    
+    func test_uuBitTwiddling_UInt8()
+    {
+        let inputs : [BitTwiddlingTestInput<UInt8>] =
+        [
+            BitTwiddlingTestInput(0b0000_0001, 0b0000_0000, 0),
+            BitTwiddlingTestInput(0b0000_0100, 0b0000_0000, 2),
+            BitTwiddlingTestInput(0b0010_0000, 0b0000_0000, 5),
+            BitTwiddlingTestInput(0b1000_0000, 0b0000_0000, 7),
+            
+            BitTwiddlingTestInput(0b1111_0001, 0b1111_0000, 0),
+            BitTwiddlingTestInput(0b1110_0100, 0b1110_0000, 2),
+            BitTwiddlingTestInput(0b0010_0111, 0b0000_0111, 5),
+            BitTwiddlingTestInput(0b1000_1111, 0b0000_1111, 7),
+            
+            // Out of bounds tests
+            BitTwiddlingTestInput(0b1000_1111, 0b1000_1111, -1),
+            BitTwiddlingTestInput(0b1000_1111, 0b1000_1111, 8),
+        ]
+        
+        for td in inputs
+        {
+            let clearOutput = td.input.uuClearBit(at: td.index)
+            XCTAssertEqual(td.expected, clearOutput)
+            
+            let setOutput = clearOutput.uuSetBit(at: td.index)
+            XCTAssertEqual(td.input, setOutput)
+            
+            // Xor original once should get to our 'cleared' expectation
+            let xorOutput = td.input.uuXorBit(at: td.index)
+            XCTAssertEqual(td.expected, xorOutput)
+            
+            // Xor again and we should then get back our original
+            let xorOutput2 = xorOutput.uuXorBit(at: td.index)
+            XCTAssertEqual(td.input, xorOutput2)
+        }
+    }
+    
+    func test_uuBitTwiddling_Int8()
+    {
+        let inputs : [BitTwiddlingTestInput<Int8>] =
+        [
+            BitTwiddlingTestInput(0b0000_0001, 0b0000_0000, 0),
+            BitTwiddlingTestInput(0b0000_0100, 0b0000_0000, 2),
+            BitTwiddlingTestInput(0b0010_0000, 0b0000_0000, 5),
+            BitTwiddlingTestInput(0b0100_0000, 0b0000_0000, 6),
+            
+            BitTwiddlingTestInput(0b0111_0001, 0b0111_0000, 0),
+            BitTwiddlingTestInput(0b0110_0100, 0b0110_0000, 2),
+            BitTwiddlingTestInput(0b0010_0111, 0b0000_0111, 5),
+            BitTwiddlingTestInput(0b0100_1111, 0b0000_1111, 6),
+            
+            // Out of bounds tests
+            BitTwiddlingTestInput(0b0000_1111, 0b0000_1111, -1),
+            BitTwiddlingTestInput(0b0000_1111, 0b0000_1111, 8),
+        ]
+        
+        for td in inputs
+        {
+            let clearOutput = td.input.uuClearBit(at: td.index)
+            XCTAssertEqual(td.expected, clearOutput)
+            
+            let setOutput = clearOutput.uuSetBit(at: td.index)
+            XCTAssertEqual(td.input, setOutput)
+            
+            // Xor original once should get to our 'cleared' expectation
+            let xorOutput = td.input.uuXorBit(at: td.index)
+            XCTAssertEqual(td.expected, xorOutput)
+            
+            // Xor again and we should then get back our original
+            let xorOutput2 = xorOutput.uuXorBit(at: td.index)
+            XCTAssertEqual(td.input, xorOutput2)
+        }
+    }
+    
+    func test_uuBitTwiddling_UInt32()
+    {
+        let inputs : [BitTwiddlingTestInput<UInt32>] =
+        [
+            BitTwiddlingTestInput(0b0000_0001, 0b0000_0000, 0),
+            BitTwiddlingTestInput(0b0000_0100, 0b0000_0000, 2),
+            BitTwiddlingTestInput(0b0010_0000, 0b0000_0000, 5),
+            BitTwiddlingTestInput(0b1000_0000, 0b0000_0000, 7),
+            
+            BitTwiddlingTestInput(0b1111_0001, 0b1111_0000, 0),
+            BitTwiddlingTestInput(0b1110_0100, 0b1110_0000, 2),
+            BitTwiddlingTestInput(0b0010_0111, 0b0000_0111, 5),
+            BitTwiddlingTestInput(0b1000_1111, 0b0000_1111, 7),
+            
+            // Out of bounds tests
+            BitTwiddlingTestInput(0b1000_1111, 0b1000_1111, -1),
+            BitTwiddlingTestInput(0b1000_1111, 0b1000_1111, 33),
+        ]
+        
+        for td in inputs
+        {
+            let clearOutput = td.input.uuClearBit(at: td.index)
+            XCTAssertEqual(td.expected, clearOutput)
+            
+            let setOutput = clearOutput.uuSetBit(at: td.index)
+            XCTAssertEqual(td.input, setOutput)
+            
+            // Xor original once should get to our 'cleared' expectation
+            let xorOutput = td.input.uuXorBit(at: td.index)
+            XCTAssertEqual(td.expected, xorOutput)
+            
+            // Xor again and we should then get back our original
+            let xorOutput2 = xorOutput.uuXorBit(at: td.index)
+            XCTAssertEqual(td.input, xorOutput2)
+        }
+    }
+    
+    func test_uuBitTwiddling_Int16()
+    {
+        let inputs : [BitTwiddlingTestInput<Int16>] =
+        [
+            BitTwiddlingTestInput(0b0000_0001, 0b0000_0000, 0),
+            BitTwiddlingTestInput(0b0000_0100, 0b0000_0000, 2),
+            BitTwiddlingTestInput(0b0010_0000, 0b0000_0000, 5),
+            BitTwiddlingTestInput(0b0100_0000, 0b0000_0000, 6),
+            
+            BitTwiddlingTestInput(0b0111_0001, 0b0111_0000, 0),
+            BitTwiddlingTestInput(0b0110_0100, 0b0110_0000, 2),
+            BitTwiddlingTestInput(0b0010_0111, 0b0000_0111, 5),
+            BitTwiddlingTestInput(0b0100_1111, 0b0000_1111, 6),
+            
+            // Out of bounds tests
+            BitTwiddlingTestInput(0b0000_1111, 0b0000_1111, -1),
+            BitTwiddlingTestInput(0b0000_1111, 0b0000_1111, 16),
+        ]
+        
+        for td in inputs
+        {
+            let clearOutput = td.input.uuClearBit(at: td.index)
+            XCTAssertEqual(td.expected, clearOutput)
+            
+            let setOutput = clearOutput.uuSetBit(at: td.index)
+            XCTAssertEqual(td.input, setOutput)
+            
+            // Xor original once should get to our 'cleared' expectation
+            let xorOutput = td.input.uuXorBit(at: td.index)
+            XCTAssertEqual(td.expected, xorOutput)
+            
+            // Xor again and we should then get back our original
+            let xorOutput2 = xorOutput.uuXorBit(at: td.index)
+            XCTAssertEqual(td.input, xorOutput2)
+        }
+    }
+    
 }
