@@ -116,7 +116,7 @@ final class UUNumberTests: XCTestCase
             let clearOutput = td.input.uuClearBit(at: td.index)
             XCTAssertEqual(td.expected, clearOutput)
             
-            let setOutput = clearOutput.uuSetBit(at: td.index)
+            let setOutput = clearOutput.uuSetBit(to: true, at: td.index)
             XCTAssertEqual(td.input, setOutput)
             
             // Xor original once should get to our 'cleared' expectation
@@ -126,6 +126,10 @@ final class UUNumberTests: XCTestCase
             // Xor again and we should then get back our original
             let xorOutput2 = xorOutput.uuXorBit(at: td.index)
             XCTAssertEqual(td.input, xorOutput2)
+            
+            // Set to false clears it
+            let setOutput2 = xorOutput2.uuSetBit(to: false, at: td.index)
+            XCTAssertEqual(td.expected, setOutput2)
         }
     }
     
@@ -153,7 +157,7 @@ final class UUNumberTests: XCTestCase
             let clearOutput = td.input.uuClearBit(at: td.index)
             XCTAssertEqual(td.expected, clearOutput)
             
-            let setOutput = clearOutput.uuSetBit(at: td.index)
+            let setOutput = clearOutput.uuSetBit(to: true, at: td.index)
             XCTAssertEqual(td.input, setOutput)
             
             // Xor original once should get to our 'cleared' expectation
@@ -163,6 +167,10 @@ final class UUNumberTests: XCTestCase
             // Xor again and we should then get back our original
             let xorOutput2 = xorOutput.uuXorBit(at: td.index)
             XCTAssertEqual(td.input, xorOutput2)
+            
+            // Set to false clears it
+            let setOutput2 = xorOutput2.uuSetBit(to: false, at: td.index)
+            XCTAssertEqual(td.expected, setOutput2)
         }
     }
     
@@ -190,7 +198,7 @@ final class UUNumberTests: XCTestCase
             let clearOutput = td.input.uuClearBit(at: td.index)
             XCTAssertEqual(td.expected, clearOutput)
             
-            let setOutput = clearOutput.uuSetBit(at: td.index)
+            let setOutput = clearOutput.uuSetBit(to: true, at: td.index)
             XCTAssertEqual(td.input, setOutput)
             
             // Xor original once should get to our 'cleared' expectation
@@ -200,6 +208,10 @@ final class UUNumberTests: XCTestCase
             // Xor again and we should then get back our original
             let xorOutput2 = xorOutput.uuXorBit(at: td.index)
             XCTAssertEqual(td.input, xorOutput2)
+            
+            // Set to false clears it
+            let setOutput2 = xorOutput2.uuSetBit(to: false, at: td.index)
+            XCTAssertEqual(td.expected, setOutput2)
         }
     }
     
@@ -227,7 +239,7 @@ final class UUNumberTests: XCTestCase
             let clearOutput = td.input.uuClearBit(at: td.index)
             XCTAssertEqual(td.expected, clearOutput)
             
-            let setOutput = clearOutput.uuSetBit(at: td.index)
+            let setOutput = clearOutput.uuSetBit(to: true, at: td.index)
             XCTAssertEqual(td.input, setOutput)
             
             // Xor original once should get to our 'cleared' expectation
@@ -237,6 +249,10 @@ final class UUNumberTests: XCTestCase
             // Xor again and we should then get back our original
             let xorOutput2 = xorOutput.uuXorBit(at: td.index)
             XCTAssertEqual(td.input, xorOutput2)
+            
+            // Set to false clears it
+            let setOutput2 = xorOutput2.uuSetBit(to: false, at: td.index)
+            XCTAssertEqual(td.expected, setOutput2)
         }
     }
     

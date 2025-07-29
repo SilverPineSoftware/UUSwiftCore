@@ -64,20 +64,24 @@ public extension FixedWidthInteger
         return self & ~mask
     }
     
-    /// Returns a copy of `self` with the bit at `index` set (to 1).
+    /// Returns a copy of `self` with the bit at `index` set or cleared.
     ///
-    /// - Parameter index: The bit position to set, in 0 ..< Self.bitWidth.
-    /// - Returns: A new integer with that bit set.
-    func uuSetBit(at index: Int) -> Self
+    /// - Parameters:
+    ///   - index: The bit position to modify (0 ..< `Self.bitWidth`).
+    ///   - to:  Pass `true` to set the bit (1), or `false` to clear it (0).
+    /// - Returns: A new integer with that bit modified, or `self` if `index` is out of bounds.
+    func uuSetBit(to: Bool, at index: Int) -> Self
     {
-        // If the index is invalid, just return self unchanged
+        // If the index is invalid, return unchanged
         guard (0..<Self.bitWidth).contains(index) else
         {
             return self
         }
-        
+
         let mask: Self = 1 << index
-        return self | mask
+        return to
+            ? (self | mask)   // set bit
+            : (self & ~mask)  // clear bit
     }
 
     /// Returns a copy of `self` with the bit at `index` XOR’d (toggled).
