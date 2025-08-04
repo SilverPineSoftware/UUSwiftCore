@@ -912,7 +912,7 @@ public extension UUCoreDataErrorCode
     }
 }
 
-public class UUCoreDataStack
+open class UUCoreDataStack
 {
     public private(set) var modelBundle: Bundle? = nil
     public private(set) var modelFileName: String = ""
