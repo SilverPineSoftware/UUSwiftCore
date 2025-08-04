@@ -120,10 +120,39 @@ open class UUCoreData: NSObject
         moc.persistentStoreCoordinator = storeCoordinator
         return moc
     }
-}
+}*/
 
 public extension NSManagedObjectContext
 {
+    /// Attempts to save the changes in the managed object context if there are any.
+    ///
+    /// - Returns: An optional `Error` if the save operation fails, or `nil` if successful or if there were no changes to save.
+    ///
+    /// This method checks whether the context has unsaved changes and attempts to save them.
+    /// If the context has no changes, it returns `nil` immediately.
+    /// If the save fails, the caught error is returned instead of being thrown, allowing the caller to handle it non-fatally.
+    func uuSave() -> Error?
+    {
+        guard hasChanges else
+        {
+            return nil
+        }
+        
+        var result: Error? = nil
+        
+        do
+        {
+            try save()
+        }
+        catch let err
+        {
+            result = err
+        }
+        
+        return result
+    }
+    
+    /*
     func uuSubmitChanges() -> Error?
     {
         var error: Error? = nil
@@ -189,9 +218,11 @@ public extension NSManagedObjectContext
                 }
             }
         }
-    }
+    }*/
 }
 
+
+/*
 public extension NSError
 {
     func uuLogDetailedErrors()
@@ -883,30 +914,42 @@ public extension UUCoreDataErrorCode
 
 public class UUCoreDataStack
 {
-    public private(set) var modelBundle: Bundle
-    public private(set) var modelFileName: String
+    public private(set) var modelBundle: Bundle? = nil
+    public private(set) var modelFileName: String = ""
+    public private(set) var model: NSManagedObjectModel? = nil
     public private(set) var storeTye: String
     public private(set) var autoMigrate: Bool = true
-    public private(set) var excludeFromBackup: Bool = false
     public private(set) var folder: FileManager.SearchPathDirectory = .applicationSupportDirectory
     
     private var persistenceContainer: NSPersistentContainer? = nil
     
     public var pragmas: [String: String] = [:]
     
-    public required init(
+    public init(
+        modelFileName: String,
+        model: NSManagedObjectModel,
+        storeType: String = NSSQLiteStoreType,
+        autoMigrate: Bool = true,
+        folder: FileManager.SearchPathDirectory = .applicationSupportDirectory)
+    {
+        self.modelFileName = modelFileName
+        self.model = model
+        self.storeTye = storeType
+        self.autoMigrate = autoMigrate
+        self.folder = folder
+    }
+    
+    public init(
         modelFileName: String,
         modelBundle: Bundle = Bundle(for: UUCoreDataStack.self),
         storeType: String = NSSQLiteStoreType,
         autoMigrate: Bool = true,
-        excludeFromBackup: Bool = false,
         folder: FileManager.SearchPathDirectory = .applicationSupportDirectory)
     {
         self.modelFileName = modelFileName
         self.modelBundle = modelBundle
         self.storeTye = storeType
         self.autoMigrate = autoMigrate
-        self.excludeFromBackup = excludeFromBackup
         self.folder = folder
     }
     
@@ -929,25 +972,47 @@ public class UUCoreDataStack
         return storeFolder.appendingPathComponent(storeFileName)
     }
     
-    public func open(_ completion: @escaping ((Error?) -> Void))
+    open func loadModel() throws -> NSManagedObjectModel
     {
-        guard let modelUrl = modelBundle.url(forResource: modelFileName, withExtension: "momd") else
+        if let existing = self.model
         {
-            let err = makeError(.modelFileNotFound)
-            completion(err)
-            return
+            return existing
         }
         
-        guard let model = NSManagedObjectModel(contentsOf: modelUrl) else
+        guard let bundle = modelBundle,
+              let url = bundle.url(forResource: modelFileName, withExtension: "momd")
+        else
         {
-            let err = makeError(.unableToLoadModel)
+            throw makeError(.modelFileNotFound)
+        }
+        
+        if let loaded = NSManagedObjectModel(contentsOf: url)
+        {
+            return loaded
+        }
+        else
+        {
+            throw makeError(.unableToLoadModel)
+        }
+    }
+    
+    open func open(_ completion: @escaping ((Error?) -> Void))
+    {
+        let model: NSManagedObjectModel
+        
+        do
+        {
+            model = try loadModel()
+        }
+        catch let err
+        {
             completion(err)
             return
         }
         
         let container = NSPersistentContainer(name: modelFileName, managedObjectModel: model)
 
-        var storeURL = self.storeURL
+        let storeURL = self.storeURL
         
         let description = NSPersistentStoreDescription(url: storeURL)
         description.type = storeTye
@@ -973,21 +1038,6 @@ public class UUCoreDataStack
                 return
             }
             
-            // Configure the file's backup flags
-            var resourceValues = URLResourceValues()
-            resourceValues.isExcludedFromBackup = self.excludeFromBackup
-            
-            do
-            {
-                try storeURL.setResourceValues(resourceValues)
-            }
-            catch let err
-            {
-                let err = self.makeError(.unableToSetBackupPropertyOnStoreFile, underlyingError: err)
-                completion(err)
-                return
-            }
-            
             UULog.debug(tag: LOG_TAG, message: "Persistent store loaded: \(storeDesc)")
             
             self.persistenceContainer = container
@@ -996,6 +1046,30 @@ public class UUCoreDataStack
 
         container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         container.viewContext.automaticallyMergesChangesFromParent = true
+    }
+    
+    public func excludeFromBackup(_ isExcluded: Bool) -> Error?
+    {
+        var result: Error? = nil
+        
+        if (self.storeTye == NSSQLiteStoreType)
+        {
+            // Configure the file's backup flags
+            var resourceValues = URLResourceValues()
+            resourceValues.isExcludedFromBackup = isExcluded
+            
+            do
+            {
+                var url = self.storeURL
+                try url.setResourceValues(resourceValues)
+            }
+            catch let err
+            {
+                result = self.makeError(.unableToSetBackupPropertyOnStoreFile, underlyingError: err)
+            }
+        }
+        
+        return result
     }
     
     public func reset(_ completion: @escaping ((Error?) -> Void))
@@ -1025,6 +1099,7 @@ public class UUCoreDataStack
         completion(resultError)
     }
     
+    /*
     public func fetchObjects<T: NSManagedObject>(
         predicate: NSPredicate? = nil,
         sortDescriptors: [NSSortDescriptor]? = nil,
@@ -1101,15 +1176,15 @@ public class UUCoreDataStack
                 try self.saveContext(context)
             },
             completion: completion)
-    }
+    }*/
     
-    private func saveContext(_ context: NSManagedObjectContext) throws
+    /*private func saveContext(_ context: NSManagedObjectContext) throws
     {
         if (context.hasChanges)
         {
             try context.save()
         }
-    }
+    }*/
     
     private func getPersistenceContainer(_ completion: @escaping ((NSPersistentContainer?, Error?) -> Void))
     {
@@ -1125,7 +1200,7 @@ public class UUCoreDataStack
         }
     }
     
-    private func performBackgroundTask(
+    public func performBackgroundTask(
         block: @escaping (NSManagedObjectContext) throws -> Void,
         completion: @escaping (Error?) -> Void)
     {
