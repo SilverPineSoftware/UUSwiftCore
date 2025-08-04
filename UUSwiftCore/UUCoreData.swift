@@ -1239,6 +1239,45 @@ open class UUCoreDataStack
         }
     }
     
+    public func performTask(
+        block: @escaping (NSManagedObjectContext) throws -> Void,
+        completion: @escaping (Error?) -> Void)
+    {
+        getPersistenceContainer
+        { container, error in
+            
+            if let err = error
+            {
+                completion(err)
+                return
+            }
+            
+            guard let container = container else
+            {
+                let err = self.makeError(.persistentContainerNotOpen)
+                completion(err)
+                return
+            }
+            
+            let context = container.viewContext
+            context.perform
+            {
+                var error: Error? = nil
+                
+                do
+                {
+                    try block(context)
+                }
+                catch let err
+                {
+                    error = self.makeError(.coreDataError, underlyingError: err)
+                }
+                
+                completion(error)
+            }
+        }
+    }
+    
     private func makeError(_ code: UUCoreDataErrorCode, underlyingError: Error? = nil) -> Error
     {
         var userInfo: [String : Any] = [:]
