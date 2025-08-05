@@ -1300,7 +1300,7 @@ open class UUCoreDataStack
         }
     }
     
-    private func makeError(_ code: UUCoreDataErrorCode, underlyingError: Error? = nil) -> Error
+    open func makeError(_ code: UUCoreDataErrorCode, underlyingError: Error? = nil) -> Error
     {
         var userInfo: [String : Any] = [:]
         
@@ -1315,3 +1315,4 @@ open class UUCoreDataStack
         return err
     }
 }
+
