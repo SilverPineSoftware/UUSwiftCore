@@ -1072,7 +1072,7 @@ open class UUCoreDataStack
         return result
     }
     
-    public func reset(_ completion: @escaping ((Error?) -> Void))
+    open func reset(_ completion: @escaping ((Error?) -> Void))
     {
         var resultError: Error? = nil
         
@@ -1200,81 +1200,103 @@ open class UUCoreDataStack
         }
     }
     
-    public func performBackgroundTask(
-        block: @escaping (NSManagedObjectContext) throws -> Void,
-        completion: @escaping (Error?) -> Void)
+    open func getBackgroundContext(
+        _ completion: @escaping (Result<NSManagedObjectContext, Error>) -> Void)
     {
         getPersistenceContainer
         { container, error in
             
             if let err = error
             {
-                completion(err)
+                completion(.failure(err))
                 return
             }
             
             guard let container = container else
             {
                 let err = self.makeError(.persistentContainerNotOpen)
-                completion(err)
+                completion(.failure(err))
                 return
             }
             
-            container.performBackgroundTask
-            { context in
-                
-                var error: Error? = nil
-                
-                do
-                {
-                    try block(context)
-                }
-                catch let err
-                {
-                    error = self.makeError(.coreDataError, underlyingError: err)
-                }
-                
-                completion(error)
-            }
+            let ctx = container.newBackgroundContext()
+            completion(.success(ctx))
         }
     }
     
-    public func performTask(
+    open func performBackgroundTask(
         block: @escaping (NSManagedObjectContext) throws -> Void,
         completion: @escaping (Error?) -> Void)
+    {
+        getBackgroundContext
+        { result in
+            
+            self.executeTask(result, block, completion)
+        }
+    }
+    
+    open func getMainContext(
+        _ completion: @escaping (Result<NSManagedObjectContext, Error>) -> Void)
     {
         getPersistenceContainer
         { container, error in
             
             if let err = error
             {
-                completion(err)
+                completion(.failure(err))
                 return
             }
             
             guard let container = container else
             {
                 let err = self.makeError(.persistentContainerNotOpen)
-                completion(err)
+                completion(.failure(err))
                 return
             }
             
-            let context = container.viewContext
-            context.perform
-            {
-                var error: Error? = nil
-                
-                do
+            let ctx = container.viewContext
+            completion(.success(ctx))
+        }
+    }
+    
+    open func performTask(
+        block: @escaping (NSManagedObjectContext) throws -> Void,
+        completion: @escaping (Error?) -> Void)
+    {
+        getMainContext
+        { result in
+            
+            self.executeTask(result, block, completion)
+        }
+    }
+    
+    open func executeTask(
+        _ result: Result<NSManagedObjectContext, Error>,
+        _ block: @escaping (NSManagedObjectContext) throws -> Void,
+        _ completion: @escaping (Error?) -> Void)
+    {
+        switch (result)
+        {
+            case .failure(let err):
+                completion(err)
+            
+            case .success(let context):
+            
+                context.perform
                 {
-                    try block(context)
+                    var error: Error? = nil
+                    
+                    do
+                    {
+                        try block(context)
+                    }
+                    catch let err
+                    {
+                        error = self.makeError(.coreDataError, underlyingError: err)
+                    }
+                    
+                    completion(error)
                 }
-                catch let err
-                {
-                    error = self.makeError(.coreDataError, underlyingError: err)
-                }
-                
-                completion(error)
-            }
         }
     }
     
