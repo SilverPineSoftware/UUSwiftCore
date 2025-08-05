@@ -34,7 +34,6 @@ final class UUCoreDataTests: XCTestCase
         let testModel = NSManagedObjectModel()
         let customStoreType = "CustomStoreType"
         let autoMigrate = false
-        let exclude = true
         let folder: FileManager.SearchPathDirectory = .cachesDirectory
 
         // When
@@ -80,7 +79,6 @@ final class UUCoreDataTests: XCTestCase
         let testBundle = Bundle(for: type(of: self))
         let defaultStoreType = NSSQLiteStoreType
         let autoMigrate = true
-        let exclude = false
         let folder: FileManager.SearchPathDirectory = .applicationSupportDirectory
 
         // When

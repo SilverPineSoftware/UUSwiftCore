@@ -1186,17 +1186,31 @@ open class UUCoreDataStack
         }
     }*/
     
-    private func getPersistenceContainer(_ completion: @escaping ((NSPersistentContainer?, Error?) -> Void))
+    private func getPersistenceContainer(_ completion: @escaping ((Result<NSPersistentContainer, Error>) -> Void))
     {
         if let container = persistenceContainer
         {
-            completion(container, nil)
+            completion(.success(container))
             return
         }
         
         self.open
         { openError in
-            completion(self.persistenceContainer, openError)
+            
+            if let err = openError
+            {
+                completion(.failure(err))
+            }
+            else if let container = self.persistenceContainer
+            {
+                completion(.success(container))
+            }
+            else
+            {
+                let err = self.makeError(.persistentContainerNotOpen)
+                completion(.failure(err))
+                return
+            }
         }
     }
     
@@ -1204,23 +1218,16 @@ open class UUCoreDataStack
         _ completion: @escaping (Result<NSManagedObjectContext, Error>) -> Void)
     {
         getPersistenceContainer
-        { container, error in
+        { result in
             
-            if let err = error
+            switch (result)
             {
-                completion(.failure(err))
-                return
+                case .failure(let err):
+                    completion(.failure(err))
+                
+                case .success(let container):
+                completion(.success(container.newBackgroundContext()))
             }
-            
-            guard let container = container else
-            {
-                let err = self.makeError(.persistentContainerNotOpen)
-                completion(.failure(err))
-                return
-            }
-            
-            let ctx = container.newBackgroundContext()
-            completion(.success(ctx))
         }
     }
     
@@ -1239,23 +1246,16 @@ open class UUCoreDataStack
         _ completion: @escaping (Result<NSManagedObjectContext, Error>) -> Void)
     {
         getPersistenceContainer
-        { container, error in
+        { result in
             
-            if let err = error
+            switch (result)
             {
-                completion(.failure(err))
-                return
+                case .failure(let err):
+                    completion(.failure(err))
+                
+                case .success(let container):
+                completion(.success(container.viewContext))
             }
-            
-            guard let container = container else
-            {
-                let err = self.makeError(.persistentContainerNotOpen)
-                completion(.failure(err))
-                return
-            }
-            
-            let ctx = container.viewContext
-            completion(.success(ctx))
         }
     }
     
