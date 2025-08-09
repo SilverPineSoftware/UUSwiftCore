@@ -1254,7 +1254,7 @@ open class UUCoreDataStack
                     completion(.failure(err))
                 
                 case .success(let container):
-                completion(.success(container.viewContext))
+                    completion(.success(container.viewContext))
             }
         }
     }
