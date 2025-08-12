@@ -794,6 +794,90 @@ public protocol UUCoreDataCodableMapping
         appContext: inout Any?)
 }
 
+public protocol UUEntityModelConvertible
+{
+    associatedtype Model
+    
+    var asModel: Model { get }
+    
+    func populate(from: Model, context: NSManagedObjectContext, appContext: inout Any?)
+}
+
+public extension Array where Element: NSManagedObject & UUEntityModelConvertible
+{
+    var asModels: [Element.Model]
+    {
+        map(\.asModel)
+    }
+}
+
+public extension NSManagedObject
+{
+    @discardableResult
+    static func uuCreate<M, Entity>(
+        from model: M,
+        in context: NSManagedObjectContext,
+        with appContext: inout Any?
+    ) -> Entity
+    where Entity: NSManagedObject & UUEntityModelConvertible, Entity.Model == M
+    {
+        let entity = Entity(context: context)
+        entity.populate(from: model, context: context, appContext: &appContext)
+        return entity
+    }
+
+    @discardableResult
+    static func uuCreate<M, Entity>(
+        from model: M,
+        in context: NSManagedObjectContext
+    ) -> Entity
+    where Entity: NSManagedObject & UUEntityModelConvertible, Entity.Model == M
+    {
+        var devNull: Any? = nil
+        return uuCreate(from: model, in: context, with: &devNull)
+    }
+
+    static func uuCreateArray<M, Entity>(
+        from models: [M],
+        in context: NSManagedObjectContext,
+        with appContext: inout Any?
+    ) -> [Entity]
+    where Entity: NSManagedObject & UUEntityModelConvertible, Entity.Model == M
+    {
+        models.map { uuCreate(from: $0, in: context, with: &appContext) }
+    }
+
+    static func uuCreateArray<M, Entity>(
+        from models: [M],
+        in context: NSManagedObjectContext
+    ) -> [Entity]
+    where Entity: NSManagedObject & UUEntityModelConvertible, Entity.Model == M
+    {
+        var devNull: Any? = nil
+        return uuCreateArray(from: models, in: context, with: &devNull)
+    }
+
+    static func uuCreateSet<M, Entity>(
+        from models: [M],
+        in context: NSManagedObjectContext,
+        with appContext: inout Any?
+    ) -> Set<Entity>
+    where Entity: NSManagedObject & UUEntityModelConvertible, Entity.Model == M
+    {
+        Set(uuCreateArray(from: models, in: context, with: &appContext))
+    }
+
+    static func uuCreateSet<M, Entity>(
+        from models: [M],
+        in context: NSManagedObjectContext
+    ) -> Set<Entity>
+    where Entity: NSManagedObject & UUEntityModelConvertible, Entity.Model == M
+    {
+        var devNull: Any? = nil
+        return uuCreateSet(from: models, in: context, with: &devNull)
+    }
+}
+
 public extension NSManagedObject
 {
     static func uuCreate<T: Codable>(
