@@ -786,6 +786,8 @@ public extension UUCoreData
     }
 }*/
 
+
+/*
 public protocol UUCoreDataCodableMapping
 {
     func uuFillFromCodable(
@@ -793,6 +795,7 @@ public protocol UUCoreDataCodableMapping
         context: NSManagedObjectContext,
         appContext: inout Any?)
 }
+*/
 
 public protocol UUEntityModelConvertible
 {
@@ -878,6 +881,7 @@ public extension NSManagedObject
     }
 }
 
+/*
 public extension NSManagedObject
 {
     static func uuCreate<T: Codable>(
@@ -937,8 +941,7 @@ public extension NSManagedObject
         var devNull: Any? = nil
         return uuCreateSet(from: from, in: context, with: &devNull)
     }
-}
-
+}*/
 
 
 public extension NSManagedObject
