@@ -114,4 +114,15 @@ public extension FixedWidthInteger
         let bcd: Self = (highNibble << 4) | lowNibble
         return bcd
     }
+    
+    /// Converts a number from a BCD byte to a number
+    /// - Returns: A bcd number or nil
+    func uuFromBcd8() -> Self
+    {
+        let highNibble = (self & 0xF0) >> 4
+        let lowNibble = self & 0x0F
+        let number: Self = highNibble * 10 + lowNibble
+        
+        return number
+    }
 }
