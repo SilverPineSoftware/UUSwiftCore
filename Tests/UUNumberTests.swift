@@ -256,4 +256,23 @@ final class UUNumberTests: XCTestCase
         }
     }
     
+    func test_uuToBcd8()
+    {
+        let inputs: [(Int, Int?)] =
+        [
+            (12, 0x12),
+            (99, 0x99),
+            (00, 0x00),
+            (100, nil),
+            (-1, nil),
+            (78, 0x78)
+        ]
+        
+        for td in inputs
+        {
+            let actual = td.0.uuToBcd8()
+            XCTAssertEqual(td.1, actual)
+        }
+    }
+    
 }

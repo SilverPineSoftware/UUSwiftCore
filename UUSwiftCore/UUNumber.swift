@@ -99,4 +99,19 @@ public extension FixedWidthInteger
         let mask: Self = 1 << index
         return self ^ mask
     }
+    
+    /// Converts a number into a BCD byte
+    /// - Returns: A bcd number or nil
+    func uuToBcd8() -> Self?
+    {
+        guard self >= 0 && self <= 99 else
+        {
+            return nil
+        }
+        
+        let highNibble: Self = self / 10
+        let lowNibble: Self = self % 10
+        let bcd: Self = (highNibble << 4) | lowNibble
+        return bcd
+    }
 }
