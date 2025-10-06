@@ -292,4 +292,40 @@ final class UUNumberTests: XCTestCase
         }
     }
     
+    func testYearsDivisibleBy400_AreLeapYears()
+    {
+        XCTAssertTrue(1600.uuIsLeapYear)
+        XCTAssertTrue(2000.uuIsLeapYear)
+        XCTAssertTrue(2400.uuIsLeapYear)
+    }
+
+    func testYearsDivisibleBy100_ButNot400_AreNotLeapYears()
+    {
+        XCTAssertFalse(1700.uuIsLeapYear)
+        XCTAssertFalse(1800.uuIsLeapYear)
+        XCTAssertFalse(1900.uuIsLeapYear)
+    }
+
+    func testYearsDivisibleBy4_ButNot100_AreLeapYears()
+    {
+        XCTAssertTrue(1996.uuIsLeapYear)
+        XCTAssertTrue(2004.uuIsLeapYear)
+        XCTAssertTrue(2024.uuIsLeapYear)
+    }
+
+    func testYearsNotDivisibleBy4_AreNotLeapYears()
+    {
+        XCTAssertFalse(1999.uuIsLeapYear)
+        XCTAssertFalse(2001.uuIsLeapYear)
+        XCTAssertFalse(2023.uuIsLeapYear)
+    }
+
+    func testNegativeYearsAndZero()
+    {
+        // Historically negative years aren't used this way,
+        // but mathematically the same leap-year rules apply.
+        XCTAssertTrue(0.uuIsLeapYear)    // divisible by 400
+        XCTAssertTrue((-4).uuIsLeapYear) // divisible by 4
+        XCTAssertFalse((-1).uuIsLeapYear)
+    }
 }
