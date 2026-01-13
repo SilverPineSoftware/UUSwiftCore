@@ -1106,7 +1106,10 @@ open class UUCoreDataStack
 
         description.setOption(autoMigrate as NSNumber, forKey: NSMigratePersistentStoresAutomaticallyOption)
         description.setOption(autoMigrate as NSNumber, forKey: NSInferMappingModelAutomaticallyOption)
+        
+        #if os(iOS)
         description.setOption(FileProtectionType.complete.rawValue as NSObject, forKey: NSPersistentStoreFileProtectionKey)
+        #endif
 
         if !pragmas.isEmpty
         {
