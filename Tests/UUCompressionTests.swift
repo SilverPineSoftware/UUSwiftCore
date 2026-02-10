@@ -78,6 +78,22 @@ final class UUCompressionTests: XCTestCase
         assertExtractedFileCount(in: outputFolder, expected: 100)
     }
 
+    // MARK: - Data descriptor (streaming) format
+
+    func test_unzip_withDataDescriptorFormat()
+    {
+        let zipData = makeZipDataWithDataDescriptor(fileCount: 3)
+        let outputFolder = makeOutputFolder()
+        zipData.uuUnzip(destinationFolder: outputFolder)
+        printUnzippedFolderContents(outputFolder)
+        XCTAssertTrue(
+            FileManager.default.fileExists(atPath: outputFolder.path),
+            "Output folder should exist after unzip"
+        )
+        assertExtractedFileCount(in: outputFolder, expected: 3)
+        assertExtractedFiles(named: ["stream_file_0.txt", "stream_file_1.txt", "stream_file_2.txt"], in: outputFolder)
+    }
+
     // MARK: - Resource zip (firmware_decoded.zip)
 
     func test_unzipFile_fromWindows()
@@ -213,6 +229,48 @@ final class UUCompressionTests: XCTestCase
             header.append(contentsOf: nameBytes)
             zip.append(header)
             zip.append(fileData)
+        }
+        return zip
+    }
+
+    /// Creates ZIP data using the data descriptor (streaming) format: bit 3 set, sizes 0 in header,
+    /// payload followed by data descriptor (signature 0x08074b50 + CRC + sizes). Used to test
+    /// that we correctly find and validate the descriptor (no false positives).
+    private func makeZipDataWithDataDescriptor(fileCount: Int) -> Data
+    {
+        var zip = Data()
+        let localFileHeaderSignature: UInt32 = 0x04034b50
+        let dataDescriptorSignature: UInt32 = 0x08074b50
+        let compressionStored: UInt16 = 0
+        let flagDataDescriptor: UInt16 = 8
+
+        for i in 0..<fileCount
+        {
+            let fileData = "streaming entry \(i)\n".data(using: .utf8) ?? Data()
+            let name = "stream_file_\(i).txt"
+            let nameBytes = [UInt8](name.utf8)
+            let crc = crc32(data: fileData)
+
+            var header = Data()
+            header.append(contentsOf: withUnsafeBytes(of: localFileHeaderSignature.littleEndian) { [UInt8]($0) })
+            header.append(contentsOf: [20, 0] as [UInt8])
+            header.append(contentsOf: withUnsafeBytes(of: flagDataDescriptor.littleEndian) { [UInt8]($0) })
+            header.append(contentsOf: withUnsafeBytes(of: compressionStored.littleEndian) { [UInt8]($0) })
+            header.append(contentsOf: [0, 0, 0, 0] as [UInt8])
+            header.append(contentsOf: withUnsafeBytes(of: crc.littleEndian) { [UInt8]($0) })
+            header.append(contentsOf: [0, 0, 0, 0] as [UInt8])
+            header.append(contentsOf: [0, 0, 0, 0] as [UInt8])
+            header.append(contentsOf: withUnsafeBytes(of: UInt16(nameBytes.count).littleEndian) { [UInt8]($0) })
+            header.append(contentsOf: [0, 0] as [UInt8])
+            header.append(contentsOf: nameBytes)
+            zip.append(header)
+            zip.append(fileData)
+            var descriptor = Data()
+            descriptor.append(contentsOf: withUnsafeBytes(of: dataDescriptorSignature.littleEndian) { [UInt8]($0) })
+            descriptor.append(contentsOf: withUnsafeBytes(of: crc.littleEndian) { [UInt8]($0) })
+            descriptor.append(contentsOf: withUnsafeBytes(of: UInt32(fileData.count).littleEndian) { [UInt8]($0) })
+            descriptor.append(contentsOf: withUnsafeBytes(of: UInt32(fileData.count).littleEndian) { [UInt8]($0) })
+            zip.append(descriptor)
         }
         return zip
     }
