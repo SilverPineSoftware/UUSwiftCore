@@ -34,7 +34,8 @@ let package = Package(
         .testTarget(
             name: "UUSwiftCoreTests",
             dependencies: ["UUSwiftTestCore", "UUSwiftCore"],
-            path: "Tests"),
+            path: "Tests",
+            resources: [.process("Resources")]),
 	],
 	swiftLanguageVersions: [
 		.v4_2,
