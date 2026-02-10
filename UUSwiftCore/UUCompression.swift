@@ -61,8 +61,10 @@ public extension Data
                 var payloadEnd: Int
                 if usesDataDescriptor
                 {
-                    // Sizes in header are 0; find data descriptor (signature 0x08074b50) after the compressed data
-                    guard let descriptorOffset = indexOfDataDescriptor(from: headerEnd, limit: count) else
+                    // Sizes in header are 0; find data descriptor (signature 0x08074b50) after the compressed data.
+                    // Validate candidates: compressed size in the descriptor must equal (descriptorOffset - headerEnd),
+                    // otherwise we may have hit 0x08074b50 inside the compressed stream (false positive).
+                    guard let descriptorOffset = indexOfValidDataDescriptor(headerEnd: headerEnd, limit: count) else
                     {
                         break
                     }
@@ -141,15 +143,21 @@ public extension Data
         }
     }
 
-    /// Searches for the ZIP data descriptor signature (0x08074b50) starting at `from`, up to `limit`.
-    /// Returns the byte offset of the signature, or nil if not found.
-    private func indexOfDataDescriptor(from start: Int, limit: Int) -> Int?
+    /// Searches for a valid ZIP data descriptor: signature 0x08074b50 with compressed size matching payload length.
+    /// This avoids false positives when 0x08074b50 appears inside a large deflate payload.
+    private func indexOfValidDataDescriptor(headerEnd: Int, limit: Int) -> Int?
     {
-        let sig = zipDataDescriptorSignature
-        var i = start
-        while i + 4 <= limit
+        var i = headerEnd
+        while i + 16 <= limit
         {
-            if (uuUInt32(at: i) ?? 0) == sig
+            if (uuUInt32(at: i) ?? 0) != zipDataDescriptorSignature
+            {
+                i += 1
+                continue
+            }
+            let descriptorCompressedSize = Int(uuUInt32(at: i + 8) ?? 0)
+            let payloadLength = i - headerEnd
+            if descriptorCompressedSize == payloadLength
             {
                 return i
             }
