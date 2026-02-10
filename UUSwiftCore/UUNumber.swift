@@ -125,4 +125,40 @@ public extension FixedWidthInteger
         
         return number
     }
+    
+    /// Determines whether the integer value represents a leap year.
+    ///
+    /// Leap years occur according to the following rules:
+    /// 1. Years divisible by 4 are leap years.
+    /// 2. However, years divisible by 100 are **not** leap years.
+    /// 3. Exception: years divisible by 400 **are** leap years.
+    ///
+    /// Examples:
+    /// ```swift
+    /// 2000.uuIsLeapYear // true  (divisible by 400)
+    /// 1900.uuIsLeapYear // false (divisible by 100 but not 400)
+    /// 2024.uuIsLeapYear // true  (divisible by 4, not by 100)
+    /// 2025.uuIsLeapYear // false (not divisible by 4)
+    /// ```
+    ///
+    /// This property is typically used on year values (e.g., `Calendar.current.component(.year, from: Date())`).
+    var uuIsLeapYear: Bool
+    {
+        // Leap year rules:
+        // 1. Divisible by 4 → leap year
+        // 2. Except if divisible by 100 → not leap year
+        // 3. Except if divisible by 400 → leap year again
+        if self % 400 == 0
+        {
+            return true
+        }
+        else if self % 100 == 0
+        {
+            return false
+        }
+        else
+        {
+            return self % 4 == 0
+        }
+    }
 }
