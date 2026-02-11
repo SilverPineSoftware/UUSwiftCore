@@ -19,6 +19,8 @@ private let zipLocalFileHeaderSignature: UInt32 = 0x04034b50
 private let zipDataDescriptorSignature: UInt32 = 0x08074b50
 private let zipCompressionStored: UInt16 = 0
 private let zipCompressionDeflate: UInt16 = 8
+/// General purpose bit 0: file is encrypted (APPNOTE 4.4.4).
+private let zipFlagEncrypted: UInt16 = 1
 /// General purpose bit 3: sizes are in a data descriptor after the compressed data (used by macOS Finder, etc.)
 private let zipFlagDataDescriptor: UInt16 = 8
 
@@ -28,6 +30,68 @@ private let zlibHeader: [UInt8] = [0x78, 0x9C]
 // Central directory (APPNOTE 4.3.16, 4.3.12)
 private let zipEOCDSignature: UInt32 = 0x06054b50
 private let zipCentralFileHeaderSignature: UInt32 = 0x02014b50
+
+// MARK: - Little-endian reads (ZIP spec: all multi-byte values are little-endian)
+
+private extension Data
+{
+    func zipUInt16(at index: Int) -> UInt16?
+    {
+        guard index + 2 <= count, let b0 = uuUInt8(at: index), let b1 = uuUInt8(at: index + 1) else { return nil }
+        return UInt16(b0) | (UInt16(b1) << 8)
+    }
+
+    func zipUInt32(at index: Int) -> UInt32?
+    {
+        guard index + 4 <= count else { return nil }
+        let b0 = UInt32(uuUInt8(at: index) ?? 0), b1 = UInt32(uuUInt8(at: index + 1) ?? 0),
+            b2 = UInt32(uuUInt8(at: index + 2) ?? 0), b3 = UInt32(uuUInt8(at: index + 3) ?? 0)
+        return b0 | (b1 << 8) | (b2 << 16) | (b3 << 24)
+    }
+
+    func zipUInt64(at index: Int) -> UInt64?
+    {
+        guard index + 8 <= count else { return nil }
+        let lo = zipUInt32(at: index) ?? 0, hi = zipUInt32(at: index + 4) ?? 0
+        return UInt64(lo) | (UInt64(hi) << 32)
+    }
+
+    /// Reads Zip64 extended info from the local file header extra field (block ID 0x0001).
+    /// Returns (compressedSize?, uncompressedSize?) for values present in the block; caller overrides only the ones they need (when local header had 0xFFFFFFFF).
+    func readLocalZip64Sizes(at localHeaderOffset: Int, fileNameLength: Int, extraFieldLength: Int, localCompressed32: UInt32, localUncompressed32: UInt32) -> (compressed: Int?, uncompressed: Int?)?
+    {
+        guard localCompressed32 == 0xFFFFFFFF || localUncompressed32 == 0xFFFFFFFF,
+              extraFieldLength >= 4 else { return nil }
+        let extraStart = localHeaderOffset + 30 + fileNameLength
+        guard extraStart + extraFieldLength <= count else { return nil }
+        var extraOffset = 0
+        while extraOffset + 4 <= extraFieldLength
+        {
+            let id = zipUInt16(at: extraStart + extraOffset) ?? 0
+            let blockSize = Int(zipUInt16(at: extraStart + extraOffset + 2) ?? 0)
+            extraOffset += 4
+            guard extraOffset + blockSize <= extraFieldLength else { break }
+            if id != 0x0001 { extraOffset += blockSize; continue }
+            let blockStart = extraStart + extraOffset
+            var zip64Off = 0
+            var uncompressed: Int? = nil
+            var compressed: Int? = nil
+            if localUncompressed32 == 0xFFFFFFFF, zip64Off + 8 <= blockSize
+            {
+                uncompressed = Int(truncatingIfNeeded: zipUInt64(at: blockStart + zip64Off) ?? 0)
+                zip64Off += 8
+            }
+            if localCompressed32 == 0xFFFFFFFF, zip64Off + 8 <= blockSize
+            {
+                compressed = Int(truncatingIfNeeded: zipUInt64(at: blockStart + zip64Off) ?? 0)
+                zip64Off += 8
+            }
+            if compressed != nil || uncompressed != nil { return (compressed, uncompressed) }
+            break
+        }
+        return nil
+    }
+}
 
 // MARK: - Central directory (parsed from end of ZIP per APPNOTE)
 
@@ -59,7 +123,8 @@ public extension Data
     /// Unzips the contents of this data (ZIP format) into the given destination directory.
     /// Uses the central directory to locate each entry, then reads local file headers and payloads.
     /// Skips directory entries and only extracts files. Paths are validated to prevent Zip Slip.
-    func uuUnzip(destinationFolder: URL)
+    /// When `verifyCRC` is true (default), entries whose decompressed data does not match the stored CRC-32 are skipped and not written.
+    func uuUnzip(destinationFolder: URL, verifyCRC: Bool = true)
     {
         do
         {
@@ -75,8 +140,14 @@ public extension Data
             for entry in centralDir.entries
             {
                 if entry.fileName.hasSuffix("/") { continue }
+                if (entry.generalPurposeBitFlag & zipFlagEncrypted) != 0
+                {
+                    UULog.error(tag: LOG_TAG, message: "Skipping encrypted entry (not supported): \(entry.fileName)")
+                    continue
+                }
 
-                let resolvedPath = destDir.resolvingSymlinksInPath().appendingPathComponent(entry.fileName).standardizedFileURL.resolvingSymlinksInPath()
+                let pathInZip = entry.fileName.replacingOccurrences(of: "\\", with: "/")
+                let resolvedPath = destDir.resolvingSymlinksInPath().appendingPathComponent(pathInZip).standardizedFileURL.resolvingSymlinksInPath()
                 let destDirPath = destDir.path
                 let resolvedPathStr = resolvedPath.path
                 let destPrefix = destDirPath.hasSuffix("/") ? destDirPath : destDirPath + "/"
@@ -88,15 +159,25 @@ public extension Data
 
                 let localHeaderOffset = entry.localHeaderOffset
                 guard localHeaderOffset + 30 <= count else { continue }
-                let sig = uuUInt32(at: localHeaderOffset) ?? 0
+                let sig = zipUInt32(at: localHeaderOffset) ?? 0
                 guard sig == zipLocalFileHeaderSignature else { continue }
 
-                let fileNameLength = Int(uuUInt16(at: localHeaderOffset + 26) ?? 0)
-                let extraFieldLength = Int(uuUInt16(at: localHeaderOffset + 28) ?? 0)
+                let fileNameLength = Int(zipUInt16(at: localHeaderOffset + 26) ?? 0)
+                let extraFieldLength = Int(zipUInt16(at: localHeaderOffset + 28) ?? 0)
                 let headerEnd = localHeaderOffset + 30 + fileNameLength + extraFieldLength
 
-                let compressedSize = entry.compressedSize
-                let uncompressedSize = entry.uncompressedSize
+                var compressedSize = entry.compressedSize
+                var uncompressedSize = entry.uncompressedSize
+                let localCompressed32 = zipUInt32(at: localHeaderOffset + 18) ?? 0
+                let localUncompressed32 = zipUInt32(at: localHeaderOffset + 22) ?? 0
+                if localCompressed32 == 0xFFFFFFFF || localUncompressed32 == 0xFFFFFFFF
+                {
+                    if let result = readLocalZip64Sizes(at: localHeaderOffset, fileNameLength: fileNameLength, extraFieldLength: extraFieldLength, localCompressed32: localCompressed32, localUncompressed32: localUncompressed32)
+                    {
+                        if let cs = result.compressed { compressedSize = cs }
+                        if let ucs = result.uncompressed { uncompressedSize = ucs }
+                    }
+                }
                 guard headerEnd + compressedSize <= count else { continue }
 
                 let parentDir = resolvedPath.deletingLastPathComponent()
@@ -120,11 +201,14 @@ public extension Data
                     continue
                 }
 
-                let computedCrc = Self.uuCrc32(outData)
-                if computedCrc != entry.crc32
+                if verifyCRC
                 {
-                    UULog.error(tag: LOG_TAG, message: "CRC-32 mismatch for entry '\(entry.fileName)': expected \(entry.crc32), got \(computedCrc); skipping write")
-                    continue
+                    let computedCrc = Self.uuCrc32(outData)
+                    if computedCrc != entry.crc32
+                    {
+                        UULog.error(tag: LOG_TAG, message: "CRC-32 mismatch for entry '\(entry.fileName)': expected \(entry.crc32), got \(computedCrc); skipping write")
+                        continue
+                    }
                 }
 
                 try outData.write(to: resolvedPath)
@@ -144,10 +228,10 @@ public extension Data
         guard count >= 22 else { return nil }
         let eocdOffset = indexOfEOCD(limit: count)
         guard let eocd = eocdOffset else { return nil }
-        let totalEntries = Int(uuUInt16(at: eocd + 10) ?? 0)
-        let centralDirSize = Int(uuUInt32(at: eocd + 12) ?? 0)
-        let centralDirOffset = Int(uuUInt32(at: eocd + 16) ?? 0)
-        let commentLength = Int(uuUInt16(at: eocd + 20) ?? 0)
+        let totalEntries = Int(zipUInt16(at: eocd + 10) ?? 0)
+        let centralDirSize = Int(zipUInt32(at: eocd + 12) ?? 0)
+        let centralDirOffset = Int(zipUInt32(at: eocd + 16) ?? 0)
+        let commentLength = Int(zipUInt16(at: eocd + 20) ?? 0)
         guard eocd + 22 + commentLength <= count,
               centralDirOffset >= 0,
               centralDirOffset + centralDirSize <= count
@@ -158,19 +242,68 @@ public extension Data
         for _ in 0..<totalEntries
         {
             guard pos + 46 <= count else { break }
-            let sig = uuUInt32(at: pos) ?? 0
+            let sig = zipUInt32(at: pos) ?? 0
             guard sig == zipCentralFileHeaderSignature else { break }
-            let compressionMethod = uuUInt16(at: pos + 10) ?? 0
-            let crc32 = uuUInt32(at: pos + 16) ?? 0
-            let compressedSize = Int(uuUInt32(at: pos + 20) ?? 0)
-            let uncompressedSize = Int(uuUInt32(at: pos + 24) ?? 0)
-            let fileNameLength = Int(uuUInt16(at: pos + 28) ?? 0)
-            let extraFieldLength = Int(uuUInt16(at: pos + 30) ?? 0)
-            let fileCommentLength = Int(uuUInt16(at: pos + 32) ?? 0)
-            let localHeaderOffset = Int(uuUInt32(at: pos + 42) ?? 0)
-            let generalPurposeBitFlag = uuUInt16(at: pos + 8) ?? 0
+            let compressionMethod = zipUInt16(at: pos + 10) ?? 0
+            let crc32 = zipUInt32(at: pos + 16) ?? 0
+            var compressedSize = Int(zipUInt32(at: pos + 20) ?? 0)
+            var uncompressedSize = Int(zipUInt32(at: pos + 24) ?? 0)
+            let fileNameLength = Int(zipUInt16(at: pos + 28) ?? 0)
+            let extraFieldLength = Int(zipUInt16(at: pos + 30) ?? 0)
+            let fileCommentLength = Int(zipUInt16(at: pos + 32) ?? 0)
+            var localHeaderOffset = Int(zipUInt32(at: pos + 42) ?? 0)
+            let diskNumberStart = zipUInt16(at: pos + 34) ?? 0
+            let generalPurposeBitFlag = zipUInt16(at: pos + 8) ?? 0
             let nameStart = pos + 46
             guard nameStart + fileNameLength + extraFieldLength + fileCommentLength <= count, fileNameLength > 0 else { break }
+
+            let extraStart = nameStart + fileNameLength
+            if extraFieldLength >= 4
+            {
+                var extraOffset = 0
+                while extraOffset + 4 <= extraFieldLength
+                {
+                    let id = zipUInt16(at: extraStart + extraOffset) ?? 0
+                    let blockSize = Int(zipUInt16(at: extraStart + extraOffset + 2) ?? 0)
+                    extraOffset += 4
+                    guard extraOffset + blockSize <= extraFieldLength else { break }
+                    if id == 0x0001, blockSize >= 8
+                    {
+                        var zip64Offset = 0
+                        if UInt32(truncatingIfNeeded: uncompressedSize) == 0xFFFFFFFF
+                        {
+                            if zip64Offset + 8 <= blockSize
+                            {
+                                uncompressedSize = Int(truncatingIfNeeded: zipUInt64(at: extraStart + extraOffset + zip64Offset) ?? 0)
+                                zip64Offset += 8
+                            }
+                        }
+                        if UInt32(truncatingIfNeeded: compressedSize) == 0xFFFFFFFF
+                        {
+                            if zip64Offset + 8 <= blockSize
+                            {
+                                compressedSize = Int(truncatingIfNeeded: zipUInt64(at: extraStart + extraOffset + zip64Offset) ?? 0)
+                                zip64Offset += 8
+                            }
+                        }
+                        if UInt32(truncatingIfNeeded: localHeaderOffset) == 0xFFFFFFFF
+                        {
+                            if zip64Offset + 8 <= blockSize
+                            {
+                                localHeaderOffset = Int(truncatingIfNeeded: zipUInt64(at: extraStart + extraOffset + zip64Offset) ?? 0)
+                                zip64Offset += 8
+                            }
+                        }
+                        if diskNumberStart == 0xFFFF, zip64Offset + 4 <= blockSize
+                        {
+                            zip64Offset += 4
+                        }
+                        break
+                    }
+                    extraOffset += blockSize
+                }
+            }
+
             let nameData = subdata(in: nameStart..<(nameStart + fileNameLength))
             let fileName = String(data: nameData, encoding: .utf8) ?? String(data: nameData, encoding: .ascii) ?? ""
             entries.append(UUZipCentralDirectoryEntry(
@@ -202,9 +335,9 @@ public extension Data
         var i = limit - minEOCDSize
         while i >= 0
         {
-            if (uuUInt32(at: i) ?? 0) == zipEOCDSignature
+            if (zipUInt32(at: i) ?? 0) == zipEOCDSignature
             {
-                let commentLen = Int(uuUInt16(at: i + 20) ?? 0)
+                let commentLen = Int(zipUInt16(at: i + 20) ?? 0)
                 if i + 22 + commentLen == limit { return i }
             }
             i -= 1
@@ -212,11 +345,22 @@ public extension Data
         return nil
     }
 
-    /// Decompresses raw deflate data (as used in ZIP) by wrapping with zlib header and Adler-32 placeholder and using Compression framework.
-    /// If the data already starts with a zlib header (0x78), it is used as-is. Otherwise we prepend header and append 4-byte Adler-32 placeholder.
-    /// If the first attempt fails (e.g. wrong size from a false-positive data descriptor), retries with a larger buffer.
+    /// Decompresses deflate data (ZIP uses raw deflate with no zlib wrapper).
+    /// When data does not start with a zlib header (0x78), treats as raw deflate and uses zlib inflate with -MAX_WBITS when available for correct ZIP output.
+    /// When data has a zlib header, uses Compression framework (buffer then streaming). Retries with larger buffer if needed.
     static func uuDecompressDeflate(_ deflateData: Data, uncompressedSize: Int) -> Data?
     {
+#if canImport(zlib)
+        if deflateData.count >= 2, deflateData[0] == 0x78
+        {
+            return uuDecompressDeflateZlibWrapped(deflateData, uncompressedSize: uncompressedSize)
+        }
+        if let raw = uuDecompressDeflateRawZlib(deflateData) { return raw }
+        var wrapped = Data(zlibHeader)
+        wrapped.append(deflateData)
+        wrapped.append(contentsOf: [0x00 as UInt8, 0x00, 0x00, 0x00])
+        return uuDecompressDeflateZlibWrapped(wrapped, uncompressedSize: uncompressedSize)
+#else
         let zlibData: Data
         if deflateData.count >= 2, deflateData[0] == 0x78
         {
@@ -229,7 +373,12 @@ public extension Data
             built.append(contentsOf: [0x00 as UInt8, 0x00, 0x00, 0x00])
             zlibData = built
         }
+        return uuDecompressDeflateZlibWrapped(zlibData, uncompressedSize: uncompressedSize)
+#endif
+    }
 
+    private static func uuDecompressDeflateZlibWrapped(_ zlibData: Data, uncompressedSize: Int) -> Data?
+    {
         let maxFallback = 32 * 1024 * 1024
         let fallbackCapacity = Swift.min(Swift.max(uncompressedSize * 4, 256 * 1024), maxFallback)
         let capacities = [uncompressedSize, fallbackCapacity].filter { $0 > 0 }
@@ -256,11 +405,7 @@ public extension Data
         }
 
         if let streamed = uuDecompressDeflateStreaming(zlibData) { return streamed }
-#if canImport(zlib)
-        return uuDecompressDeflateRawZlib(deflateData)
-#else
         return nil
-#endif
     }
 
     /// Fallback for raw deflate (ZIP-style) using zlib's inflate with -MAX_WBITS.
