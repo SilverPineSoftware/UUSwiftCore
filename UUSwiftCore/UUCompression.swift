@@ -7,6 +7,9 @@
 
 import Foundation
 import Compression
+#if canImport(zlib)
+import zlib
+#endif
 
 fileprivate let LOG_TAG: String = "UUCompression"
 
@@ -202,12 +205,23 @@ public extension Data
         return nil
     }
 
-    /// Decompresses raw deflate data (as used in ZIP) by wrapping with zlib header and using Compression framework.
+    /// Decompresses raw deflate data (as used in ZIP) by wrapping with zlib header and Adler-32 placeholder and using Compression framework.
+    /// If the data already starts with a zlib header (0x78), it is used as-is. Otherwise we prepend header and append 4-byte Adler-32 placeholder.
     /// If the first attempt fails (e.g. wrong size from a false-positive data descriptor), retries with a larger buffer.
-    private static func uuDecompressDeflate(_ deflateData: Data, uncompressedSize: Int) -> Data?
+    static func uuDecompressDeflate(_ deflateData: Data, uncompressedSize: Int) -> Data?
     {
-        var zlibData = Data(zlibHeader)
-        zlibData.append(deflateData)
+        let zlibData: Data
+        if deflateData.count >= 2, deflateData[0] == 0x78
+        {
+            zlibData = deflateData
+        }
+        else
+        {
+            var built = Data(zlibHeader)
+            built.append(deflateData)
+            built.append(contentsOf: [0x00 as UInt8, 0x00, 0x00, 0x00])
+            zlibData = built
+        }
 
         let maxFallback = 32 * 1024 * 1024
         let fallbackCapacity = Swift.min(Swift.max(uncompressedSize * 4, 256 * 1024), maxFallback)
@@ -233,6 +247,98 @@ public extension Data
                 return Data(bytes: destBuffer, count: decodedCount)
             }
         }
+
+        if let streamed = uuDecompressDeflateStreaming(zlibData) { return streamed }
+#if canImport(zlib)
+        return uuDecompressDeflateRawZlib(deflateData)
+#else
         return nil
+#endif
+    }
+
+    /// Fallback for raw deflate (ZIP-style) using zlib's inflate with -MAX_WBITS.
+#if canImport(zlib)
+    private static func uuDecompressDeflateRawZlib(_ deflateData: Data) -> Data?
+    {
+        guard !deflateData.isEmpty else { return nil }
+        var stream = z_stream()
+        defer { inflateEnd(&stream) }
+
+        let result = deflateData.withUnsafeBytes { (srcPtr: UnsafeRawBufferPointer) -> Data? in
+            guard let srcBase = srcPtr.baseAddress?.assumingMemoryBound(to: Bytef.self) else { return nil }
+            stream.next_in = UnsafeMutablePointer<Bytef>(mutating: srcBase)
+            stream.avail_in = uInt(deflateData.count)
+
+            if inflateInit2_(&stream, -Int32(MAX_WBITS), ZLIB_VERSION, Int32(MemoryLayout<z_stream>.size)) != Z_OK
+            {
+                return nil
+            }
+
+            let chunkSize = 65_536
+            let dstBuffer = UnsafeMutablePointer<Bytef>.allocate(capacity: chunkSize)
+            defer { dstBuffer.deallocate() }
+            var out = Data()
+            out.reserveCapacity(deflateData.count * 2)
+
+            repeat
+            {
+                stream.next_out = dstBuffer
+                stream.avail_out = uInt(chunkSize)
+                let status = inflate(&stream, Z_NO_FLUSH)
+                if status != Z_OK && status != Z_STREAM_END { return nil }
+                let produced = chunkSize - Int(stream.avail_out)
+                if produced > 0 { out.append(dstBuffer, count: produced) }
+                if status == Z_STREAM_END { break }
+            }
+            while stream.avail_out == 0
+
+            return out
+        }
+        return result
+    }
+#endif
+
+    /// Fallback for large or problematic zlib streams using the streaming API.
+    private static func uuDecompressDeflateStreaming(_ zlibData: Data) -> Data?
+    {
+        let dstSize = 65_536
+        let dstBuffer = UnsafeMutablePointer<UInt8>.allocate(capacity: dstSize)
+        defer { dstBuffer.deallocate() }
+
+        var stream = compression_stream(
+            dst_ptr: dstBuffer,
+            dst_size: dstSize,
+            src_ptr: dstBuffer,
+            src_size: 0,
+            state: nil
+        )
+        guard compression_stream_init(&stream, COMPRESSION_STREAM_DECODE, COMPRESSION_ZLIB) != COMPRESSION_STATUS_ERROR else
+        {
+            return nil
+        }
+        defer { compression_stream_destroy(&stream) }
+
+        var result = Data()
+        result.reserveCapacity(zlibData.count * 2)
+
+        let success = zlibData.withUnsafeBytes { (srcPtr: UnsafeRawBufferPointer) -> Bool in
+            guard let srcBase = srcPtr.baseAddress?.assumingMemoryBound(to: UInt8.self) else { return false }
+            stream.src_ptr = srcBase
+            stream.src_size = zlibData.count
+
+            while true
+            {
+                stream.dst_ptr = dstBuffer
+                stream.dst_size = dstSize
+                let flags: Int32 = stream.src_size == 0 ? Int32(COMPRESSION_STREAM_FINALIZE.rawValue) : 0
+                let status = compression_stream_process(&stream, flags)
+
+                if status == COMPRESSION_STATUS_ERROR { return false }
+                let produced = dstSize - stream.dst_size
+                if produced > 0 { result.append(dstBuffer, count: produced) }
+                if status == COMPRESSION_STATUS_END { return true }
+            }
+        }
+        return success ? result : nil
     }
 }
