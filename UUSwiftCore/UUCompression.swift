@@ -120,6 +120,13 @@ public extension Data
                     continue
                 }
 
+                let computedCrc = Self.uuCrc32(outData)
+                if computedCrc != entry.crc32
+                {
+                    UULog.error(tag: LOG_TAG, message: "CRC-32 mismatch for entry '\(entry.fileName)': expected \(entry.crc32), got \(computedCrc); skipping write")
+                    continue
+                }
+
                 try outData.write(to: resolvedPath)
             }
         }
@@ -341,4 +348,24 @@ public extension Data
         }
         return success ? result : nil
     }
+
+    /// CRC-32 (ZIP standard polynomial, same as ISO 3309). Used to validate decompressed entry data.
+    private static func uuCrc32(_ data: Data) -> UInt32
+    {
+        var crc: UInt32 = 0xFFFF_FFFF
+        for byte in data
+        {
+            crc = (crc >> 8) ^ zipCrc32Table[Int((crc ^ UInt32(byte)) & 0xFF)]
+        }
+        return crc ^ 0xFFFF_FFFF
+    }
+}
+
+private let zipCrc32Table: [UInt32] = (0..<256).map { i in
+    var c = UInt32(i)
+    for _ in 0..<8
+    {
+        c = (c & 1) == 1 ? (0xEDB8_8320 ^ (c >> 1)) : (c >> 1)
+    }
+    return c
 }
