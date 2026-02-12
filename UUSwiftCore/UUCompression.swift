@@ -13,6 +13,13 @@ import zlib
 
 fileprivate let LOG_TAG: String = "UUCompression"
 
+/// Normalizes a file path for Zip Slip comparison so that `/private/var/...` and `/var/...` match (iOS can return either form from URL.path).
+private func normalizedPathForZipSlipCheck(_ path: String) -> String
+{
+    if path.hasPrefix("/private/") { return "/" + String(path.dropFirst(9)) }
+    return path
+}
+
 // MARK: - ZIP constants (local file header)
 
 private let zipLocalFileHeaderSignature: UInt32 = 0x04034b50
@@ -157,15 +164,18 @@ public extension Data
                 let resolvedPath = destDir.resolvingSymlinksInPath().appendingPathComponent(pathInZip).standardizedFileURL.resolvingSymlinksInPath()
                 let destDirPath = destDir.path
                 let resolvedPathStr = resolvedPath.path
-                let destPrefix = destDirPath.hasSuffix("/") ? destDirPath : destDirPath + "/"
-                
+                let destPathNorm = normalizedPathForZipSlipCheck(destDirPath)
+                let resolvedPathNorm = normalizedPathForZipSlipCheck(resolvedPathStr)
+                let destPrefix = destPathNorm.hasSuffix("/") ? destPathNorm : destPathNorm + "/"
+
                 UULog.debug(tag: LOG_TAG, message: "pathInZip: \(pathInZip)")
                 UULog.debug(tag: LOG_TAG, message: "resolvedPath: \(resolvedPath)")
                 UULog.debug(tag: LOG_TAG, message: "destDirPath: \(destDirPath)")
                 UULog.debug(tag: LOG_TAG, message: "resolvedPathStr: \(resolvedPathStr)")
                 UULog.debug(tag: LOG_TAG, message: "destPrefix: \(destPrefix)")
                 
-                if resolvedPathStr != destDirPath && !resolvedPathStr.hasPrefix(destPrefix)
+
+                if resolvedPathNorm != destPathNorm && !resolvedPathNorm.hasPrefix(destPrefix)
                 {
                     UULog.error(tag: LOG_TAG, message: "Potential Zip Slip attempt: \(entry.fileName)")
                     continue
