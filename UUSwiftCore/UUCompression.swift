@@ -139,7 +139,14 @@ public extension Data
 
             for entry in centralDir.entries
             {
-                if entry.fileName.hasSuffix("/") { continue }
+                UULog.debug(tag: LOG_TAG, message: "Processing entry: \(entry.fileName)")
+                
+                if entry.fileName.hasSuffix("/")
+                {
+                    UULog.debug(tag: LOG_TAG, message: "Skipping directory entry: \(entry.fileName)")
+                    continue
+                }
+                
                 if (entry.generalPurposeBitFlag & zipFlagEncrypted) != 0
                 {
                     UULog.error(tag: LOG_TAG, message: "Skipping encrypted entry (not supported): \(entry.fileName)")
@@ -151,6 +158,13 @@ public extension Data
                 let destDirPath = destDir.path
                 let resolvedPathStr = resolvedPath.path
                 let destPrefix = destDirPath.hasSuffix("/") ? destDirPath : destDirPath + "/"
+                
+                UULog.debug(tag: LOG_TAG, message: "pathInZip: \(pathInZip)")
+                UULog.debug(tag: LOG_TAG, message: "resolvedPath: \(resolvedPath)")
+                UULog.debug(tag: LOG_TAG, message: "destDirPath: \(destDirPath)")
+                UULog.debug(tag: LOG_TAG, message: "resolvedPathStr: \(resolvedPathStr)")
+                UULog.debug(tag: LOG_TAG, message: "destPrefix: \(destPrefix)")
+                
                 if resolvedPathStr != destDirPath && !resolvedPathStr.hasPrefix(destPrefix)
                 {
                     UULog.error(tag: LOG_TAG, message: "Potential Zip Slip attempt: \(entry.fileName)")
