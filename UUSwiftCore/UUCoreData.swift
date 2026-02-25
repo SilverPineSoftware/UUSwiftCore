@@ -1003,6 +1003,7 @@ open class UUCoreDataStack
 {
     public private(set) var modelBundle: Bundle? = nil
     public private(set) var modelFileName: String = ""
+    public private(set) var storeFileName: String = ""
     public private(set) var model: NSManagedObjectModel? = nil
     public private(set) var storeTye: String
     public private(set) var autoMigrate: Bool = true
@@ -1014,12 +1015,14 @@ open class UUCoreDataStack
     
     public init(
         modelFileName: String,
+        storeFileName: String,
         model: NSManagedObjectModel,
         storeType: String = NSSQLiteStoreType,
         autoMigrate: Bool = true,
         folder: FileManager.SearchPathDirectory = .applicationSupportDirectory)
     {
         self.modelFileName = modelFileName
+        self.storeFileName = storeFileName
         self.model = model
         self.storeTye = storeType
         self.autoMigrate = autoMigrate
@@ -1028,21 +1031,50 @@ open class UUCoreDataStack
     
     public init(
         modelFileName: String,
+        storeFileName: String,
         modelBundle: Bundle = Bundle(for: UUCoreDataStack.self),
         storeType: String = NSSQLiteStoreType,
         autoMigrate: Bool = true,
         folder: FileManager.SearchPathDirectory = .applicationSupportDirectory)
     {
         self.modelFileName = modelFileName
+        self.storeFileName = storeFileName
         self.modelBundle = modelBundle
         self.storeTye = storeType
         self.autoMigrate = autoMigrate
         self.folder = folder
     }
     
-    public var storeFileName: String
+    public convenience init(
+        modelFileName: String,
+        model: NSManagedObjectModel,
+        storeType: String = NSSQLiteStoreType,
+        autoMigrate: Bool = true,
+        folder: FileManager.SearchPathDirectory = .applicationSupportDirectory)
     {
-        return "\(modelFileName).sqlite"
+        self.init(
+            modelFileName: modelFileName,
+            storeFileName: "\(modelFileName).sqlite",
+            model: model,
+            storeType: storeType,
+            autoMigrate: autoMigrate,
+            folder: folder)
+    }
+    
+    public convenience init(
+        modelFileName: String,
+        modelBundle: Bundle = Bundle(for: UUCoreDataStack.self),
+        storeType: String = NSSQLiteStoreType,
+        autoMigrate: Bool = true,
+        folder: FileManager.SearchPathDirectory = .applicationSupportDirectory)
+    {
+        self.init(
+            modelFileName: modelFileName,
+            storeFileName: "\(modelFileName).sqlite",
+            modelBundle: modelBundle,
+            storeType: storeType,
+            autoMigrate: autoMigrate,
+            folder: folder)
     }
     
     public var storeFolder: URL
