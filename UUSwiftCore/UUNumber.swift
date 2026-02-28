@@ -48,6 +48,24 @@ public extension FixedWidthInteger
         MemoryLayout<Self>.size
     }
     
+    /// Returns whether all bits specified by `mask` are set in this integer.
+    ///
+    /// Equivalent to `(self & mask) == mask`: every bit that is 1 in `mask` must also be 1 in `self`.
+    ///
+    /// - Parameter mask: A bitmask; each bit that is 1 indicates a bit that must be set in `self`.
+    /// - Returns: `true` if all bits in `mask` are set in `self`, otherwise `false`.
+    ///
+    /// Example:
+    /// ```swift
+    /// let flags: Int = 0b1101
+    /// flags.uuIsBitSet(mask: 0b0101)  // true  (bits 0 and 2 are set)
+    /// flags.uuIsBitSet(mask: 0b1010)  // false (bit 1 is not set)
+    /// ```
+    func uuIsBitSet(mask: Self) -> Bool
+    {
+        (self & mask) == mask
+    }
+
     /// Returns a copy of `self` with the bit at `index` cleared (set to 0).
     ///
     /// - Parameter index: The bit position to clear, in 0 ..< Self.bitWidth.

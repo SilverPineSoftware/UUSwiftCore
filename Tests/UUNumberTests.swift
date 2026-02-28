@@ -75,9 +75,48 @@ final class UUNumberTests: XCTestCase
         XCTAssertEqual(1, UInt8(0).uuByteSize)
         XCTAssertEqual(1, Int8(0).uuByteSize)
     }
-    
+
+    // MARK: uuIsBitSet tests
+
+    func test_uuIsBitSet_allMaskBitsSet_returnsTrue()
+    {
+        let value: Int = 0b1101
+        XCTAssertTrue(value.uuIsBitSet(mask: 0b0101))
+        XCTAssertTrue(value.uuIsBitSet(mask: 0b1001))
+        XCTAssertTrue(value.uuIsBitSet(mask: 0b1101))
+        XCTAssertTrue(value.uuIsBitSet(mask: 0b0001))
+    }
+
+    func test_uuIsBitSet_someMaskBitsNotSet_returnsFalse()
+    {
+        let value: Int = 0b1101
+        XCTAssertFalse(value.uuIsBitSet(mask: 0b1010))
+        XCTAssertFalse(value.uuIsBitSet(mask: 0b1110))
+        XCTAssertFalse(value.uuIsBitSet(mask: 0b1111))
+    }
+
+    func test_uuIsBitSet_maskZero_returnsTrue()
+    {
+        XCTAssertTrue(0.uuIsBitSet(mask: 0))
+        XCTAssertTrue(0b1111_1111.uuIsBitSet(mask: 0))
+    }
+
+    func test_uuIsBitSet_maskEqualsSelf_returnsTrue()
+    {
+        let value: Int = 0b1010_0101
+        XCTAssertTrue(value.uuIsBitSet(mask: value))
+    }
+
+    func test_uuIsBitSet_worksWithUInt8()
+    {
+        let value: UInt8 = 0b1100_1010
+        XCTAssertTrue(value.uuIsBitSet(mask: 0b1000_0010))
+        XCTAssertTrue(value.uuIsBitSet(mask: 0b0100_1000))
+        XCTAssertFalse(value.uuIsBitSet(mask: 0b0011_0101))
+    }
+
     // MARK: uuClearingBit tests
-    
+
     struct BitTwiddlingTestInput<NumberType: FixedWidthInteger>
     {
         let input: NumberType
