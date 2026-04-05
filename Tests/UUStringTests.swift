@@ -11,6 +11,146 @@ import UUSwiftTestCore
 
 final class UUStringTests: XCTestCase
 {
+    // MARK: - uuFirstCapital
+
+    func test_uuFirstCapital_empty()
+    {
+        XCTAssertEqual("".uuFirstCapital(), "")
+    }
+
+    func test_uuFirstCapital_singleCharacter()
+    {
+        XCTAssertEqual("a".uuFirstCapital(), "A")
+        XCTAssertEqual("A".uuFirstCapital(), "A")
+    }
+
+    func test_uuFirstCapital_typicalWords()
+    {
+        XCTAssertEqual("hello".uuFirstCapital(), "Hello")
+        XCTAssertEqual("HELLO".uuFirstCapital(), "Hello")
+        XCTAssertEqual("hELLO".uuFirstCapital(), "Hello")
+    }
+
+    func test_uuFirstCapital_multipleWordsUnchangedExceptFirstChar()
+    {
+        XCTAssertEqual("hello world".uuFirstCapital(), "Hello world")
+    }
+
+    // MARK: - uuSnakeToCamelCase
+
+    func test_uuSnakeToCamelCase_basic()
+    {
+        XCTAssertEqual("user_name".uuSnakeToCamelCase(), "userName")
+        XCTAssertEqual("USER_NAME".uuSnakeToCamelCase(), "userName")
+    }
+
+    func test_uuSnakeToCamelCase_singleSegment()
+    {
+        XCTAssertEqual("user".uuSnakeToCamelCase(), "user")
+        XCTAssertEqual("USER".uuSnakeToCamelCase(), "user")
+    }
+
+    func test_uuSnakeToCamelCase_empty()
+    {
+        XCTAssertEqual("".uuSnakeToCamelCase(), "")
+    }
+
+    func test_uuSnakeToCamelCase_consecutiveUnderscores()
+    {
+        XCTAssertEqual("user__name".uuSnakeToCamelCase(), "userName")
+    }
+
+    func test_uuSnakeToCamelCase_leadingUnderscores()
+    {
+        XCTAssertEqual("__user".uuSnakeToCamelCase(), "User")
+    }
+
+    func test_uuSnakeToCamelCase_trailingUnderscore()
+    {
+        XCTAssertEqual("user_".uuSnakeToCamelCase(), "user")
+    }
+
+    func test_uuSnakeToCamelCase_multipleSegments()
+    {
+        XCTAssertEqual("one_two_three".uuSnakeToCamelCase(), "oneTwoThree")
+    }
+
+    /// Table-driven cases aligned with Kotlin `test_uuSnakeToCamelCase`.
+    func test_uuSnakeToCamelCase_table()
+    {
+        let cases: [(String, String)] = [
+            ("", ""),
+            ("user_name", "userName"),
+            ("USER_NAME", "userName"),
+            ("single", "single"),
+            ("a_b_c", "abc"),
+            ("aa_bb_cc", "aaBbCc"),
+            ("user__name", "userName"),
+        ]
+        for (input, expected) in cases
+        {
+            NSLog("Input: \(input), Expected: \(expected)")
+            XCTAssertEqual(input.uuSnakeToCamelCase(), expected, "input=\(input), expected=\(expected), actual=\(input.uuSnakeToCamelCase())")
+        }
+    }
+
+    // MARK: - uuSnakeToPascalCase
+
+    func test_uuSnakeToPascalCase_basic()
+    {
+        XCTAssertEqual("user_name".uuSnakeToPascalCase(), "UserName")
+        XCTAssertEqual("USER_NAME".uuSnakeToPascalCase(), "UserName")
+    }
+
+    func test_uuSnakeToPascalCase_singleSegment()
+    {
+        XCTAssertEqual("user".uuSnakeToPascalCase(), "User")
+        XCTAssertEqual("USER".uuSnakeToPascalCase(), "User")
+    }
+
+    func test_uuSnakeToPascalCase_empty()
+    {
+        XCTAssertEqual("".uuSnakeToPascalCase(), "")
+    }
+
+    func test_uuSnakeToPascalCase_consecutiveUnderscores()
+    {
+        XCTAssertEqual("user__name".uuSnakeToPascalCase(), "UserName")
+    }
+
+    func test_uuSnakeToPascalCase_leadingUnderscores()
+    {
+        XCTAssertEqual("__user".uuSnakeToPascalCase(), "User")
+    }
+
+    func test_uuSnakeToPascalCase_trailingUnderscore()
+    {
+        XCTAssertEqual("user_".uuSnakeToPascalCase(), "User")
+    }
+
+    func test_uuSnakeToPascalCase_multipleSegments()
+    {
+        XCTAssertEqual("one_two_three".uuSnakeToPascalCase(), "OneTwoThree")
+    }
+
+    /// Table-driven cases aligned with Kotlin `test_uuSnakeToPascalCase`.
+    func test_uuSnakeToPascalCase_table()
+    {
+        let cases: [(String, String)] = [
+            ("", ""),
+            ("user_name", "UserName"),
+            ("USER_NAME", "UserName"),
+            ("single", "Single"),
+            ("a_b_c", "ABC"),
+            ("aa_bb_cc", "AaBbCc"),
+            ("user__name", "UserName"),
+        ]
+        for (input, expected) in cases
+        {
+            XCTAssertEqual(input.uuSnakeToPascalCase(), expected, "input=\(input)")
+        }
+    }
+
     func testFixedWidthIntegerToBinaryString()
     {
         // UInt8 examples

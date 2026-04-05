@@ -87,7 +87,59 @@ public extension String
     {
         return trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
     }
-    
+
+    /// Returns a copy with the first character uppercased and the remainder lowercased.
+    ///
+    /// An empty string returns an empty string. Used by ``uuSnakeToCamelCase()`` and ``uuSnakeToPascalCase()``.
+    func uuFirstCapital() -> String
+    {
+        guard !isEmpty else { return "" }
+        return prefix(1).uppercased() + dropFirst().lowercased()
+    }
+
+    /// Converts a snake_case string to camelCase.
+    ///
+    /// The receiver is lowercased, split on underscores. The first segment is passed through ``uuFirstCapital()``
+    /// then lowercased entirely so the result starts with a lowercase letter. Each later segment uses
+    /// ``uuFirstCapital()`` when its length is greater than one; a single-character segment stays lowercase
+    /// (so `a_b_c` becomes `abc`, while `user_name` becomes `userName`).
+    ///
+    /// - Returns: The camelCase string.
+    func uuSnakeToCamelCase() -> String
+    {
+        let parts = lowercased().split(separator: "_", omittingEmptySubsequences: false)
+        var result = ""
+        for (index, sub) in parts.enumerated()
+        {
+            let s = String(sub)
+            if index == 0
+            {
+                result += s.uuFirstCapital().lowercased()
+            }
+            else if s.count == 1
+            {
+                result += s
+            }
+            else
+            {
+                result += s.uuFirstCapital()
+            }
+        }
+        return result
+    }
+
+    /// Converts a snake_case string to PascalCase.
+    ///
+    /// The receiver is lowercased, split on underscores, and each segment is capitalized with ``uuFirstCapital()``
+    /// and concatenated (for example `user_name` becomes `UserName`).
+    ///
+    /// - Returns: The PascalCase string.
+    func uuSnakeToPascalCase() -> String
+    {
+        let parts = lowercased().split(separator: "_", omittingEmptySubsequences: false)
+        return parts.map { String($0).uuFirstCapital() }.joined()
+    }
+
     // Parses this string as a decimal number
     func uuAsDecimalNumber() -> NSNumber?
     {
