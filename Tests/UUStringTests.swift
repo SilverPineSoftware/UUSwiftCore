@@ -27,8 +27,8 @@ final class UUStringTests: XCTestCase
     func test_uuFirstCapital_typicalWords()
     {
         XCTAssertEqual("hello".uuFirstCapital(), "Hello")
-        XCTAssertEqual("HELLO".uuFirstCapital(), "Hello")
-        XCTAssertEqual("hELLO".uuFirstCapital(), "Hello")
+        XCTAssertEqual("HELLO".uuFirstCapital(), "HELLO")
+        XCTAssertEqual("hELLO".uuFirstCapital(), "HELLO")
     }
 
     func test_uuFirstCapital_multipleWordsUnchangedExceptFirstChar()

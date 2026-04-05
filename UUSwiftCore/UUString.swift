@@ -88,13 +88,13 @@ public extension String
         return trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
     }
 
-    /// Returns a copy with the first character uppercased and the remainder lowercased.
+    /// Returns a copy with the first character uppercased.
     ///
     /// An empty string returns an empty string. Used by ``uuSnakeToCamelCase()`` and ``uuSnakeToPascalCase()``.
     func uuFirstCapital() -> String
     {
         guard !isEmpty else { return "" }
-        return prefix(1).uppercased() + dropFirst().lowercased()
+        return prefix(1).uppercased() + dropFirst()
     }
 
     /// Converts a snake_case string to camelCase.
