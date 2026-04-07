@@ -5,7 +5,7 @@ import PackageDescription
 let package = Package(
 	name: "UUSwiftCore",
 	platforms: [
-		.iOS(.v10),
+		.iOS(.v13),
 		.macOS(.v10_15)
 	],
 

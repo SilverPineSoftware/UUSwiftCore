@@ -1364,6 +1364,19 @@ open class UUCoreDataStack
         }
     }
     
+    open func performBackgroundTaskAndWait(
+        block: @escaping (NSManagedObjectContext) throws -> Void) async -> Error?
+    {
+        return await withCheckedContinuation
+        { continuation in
+            
+            self.performBackgroundTask(block: block)
+            { error in
+                continuation.resume(returning: error)
+            }
+        }
+    }
+    
     open func getMainContext(
         _ completion: @escaping (Result<NSManagedObjectContext, Error>) -> Void)
     {
@@ -1389,6 +1402,19 @@ open class UUCoreDataStack
         { result in
             
             self.executeTask(result, block, completion)
+        }
+    }
+    
+    open func performTaskAndWait(
+        block: @escaping (NSManagedObjectContext) throws -> Void) async -> Error?
+    {
+        return await withCheckedContinuation
+        { continuation in
+            
+            self.performTask(block: block)
+            { error in
+                continuation.resume(returning: error)
+            }
         }
     }
     
