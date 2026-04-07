@@ -841,6 +841,7 @@ public extension UUEntityModelConvertible where Self: NSManagedObject
     }
 
     /// Batch create; returns `[Self]`.
+    @discardableResult
     static func uuCreateArray(
         from models: [Self.Model],
         in context: NSManagedObjectContext,
@@ -850,6 +851,7 @@ public extension UUEntityModelConvertible where Self: NSManagedObject
         models.map { uuCreate(from: $0, in: context, with: &appContext) }
     }
 
+    @discardableResult
     static func uuCreateArray(
         from models: [Self.Model],
         in context: NSManagedObjectContext
@@ -857,6 +859,26 @@ public extension UUEntityModelConvertible where Self: NSManagedObject
     {
         var devNull: Any? = nil
         return uuCreateArray(from: models, in: context, with: &devNull)
+    }
+    
+    @discardableResult
+    static func uuCreateSet(
+        from models: [Self.Model],
+        in context: NSManagedObjectContext,
+        with appContext: inout Any?
+    ) -> Set<Self>
+    {
+        Set(uuCreateArray(from: models, in: context, with: &appContext))
+    }
+    
+    @discardableResult
+    static func uuCreateSet(
+        from models: [Self.Model],
+        in context: NSManagedObjectContext
+    ) -> Set<Self>
+    {
+        var devNull: Any? = nil
+        return uuCreateSet(from: models, in: context, with: &devNull)
     }
 }
 

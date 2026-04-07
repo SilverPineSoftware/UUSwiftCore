@@ -735,6 +735,60 @@ final class UUCoreDataTests: XCTestCase
         }
     }
 
+    // MARK: - UUEntityModelConvertible uuCreateSet
+
+    func test_uuCreateSet_multipleModels_returnsSetAndPersistsAll()
+    {
+        performOnPlayerStack(storeLabel: "uuCreateSet_multi")
+        { context in
+            let id1 = UUID(), id2 = UUID(), id3 = UUID()
+            let models = [
+                Player(identifier: id1, name: "S1", number: 1, gamesPlayed: 1, nickName: "s"),
+                Player(identifier: id2, name: "S2", number: 2, gamesPlayed: 2, nickName: nil),
+                Player(identifier: id3, name: "S3", number: 3, gamesPlayed: 3, nickName: "t"),
+            ]
+
+            let created = PlayerEntity.uuCreateSet(from: models, in: context)
+            XCTAssertEqual(created.count, 3)
+            XCTAssertEqual(Set(created.map(\.identifier)), Set([id1, id2, id3]))
+
+            XCTAssertNil(context.uuSave())
+
+            let req = PlayerEntity.fetchRequest()
+            let rows = try? context.fetch(req)
+            XCTAssertEqual(rows?.count, 3)
+        }
+    }
+
+    func test_uuCreateSet_empty_returnsEmptySet()
+    {
+        performOnPlayerStack(storeLabel: "uuCreateSet_empty")
+        { context in
+            let created = PlayerEntity.uuCreateSet(from: [], in: context)
+            XCTAssertTrue(created.isEmpty)
+            XCTAssertNil(context.uuSave())
+
+            let req = PlayerEntity.fetchRequest()
+            let rows = try? context.fetch(req)
+            XCTAssertEqual(rows?.count, 0)
+        }
+    }
+
+    func test_uuCreateSet_withAppContext()
+    {
+        performOnPlayerStack(storeLabel: "uuCreateSet_appCtx")
+        { context in
+            let models = [
+                Player(identifier: UUID(), name: "SetCtx", number: 0, gamesPlayed: 0, nickName: nil),
+            ]
+            var appContext: Any? = 99
+            let out = PlayerEntity.uuCreateSet(from: models, in: context, with: &appContext)
+            XCTAssertEqual(out.count, 1)
+            XCTAssertEqual(appContext as? Int, 99)
+            XCTAssertNil(context.uuSave())
+        }
+    }
+
     func test_asModels_mapsFetchedEntitiesToPlayer()
     {
         performOnPlayerStack(storeLabel: "asModels_roundTrip")
