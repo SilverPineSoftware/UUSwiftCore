@@ -816,6 +816,53 @@ public extension Array where Element: NSManagedObject & UUEntityModelConvertible
 
 public extension UUEntityModelConvertible where Self: NSManagedObject
 {
+    /// Creates a new managed object of this type from `model`.
+    @discardableResult
+    static func uuCreate(
+        from model: Self.Model,
+        in context: NSManagedObjectContext,
+        with appContext: inout Any?
+    ) -> Self
+    {
+        let entity = Self(context: context)
+        entity.populate(from: model, context: context, appContext: &appContext)
+        return entity
+    }
+
+    /// Creates a new managed object of this type from `model` (no appContext).
+    @discardableResult
+    static func uuCreate(
+        from model: Self.Model,
+        in context: NSManagedObjectContext
+    ) -> Self
+    {
+        var devNull: Any? = nil
+        return uuCreate(from: model, in: context, with: &devNull)
+    }
+
+    /// Batch create; returns `[Self]`.
+    static func uuCreateArray(
+        from models: [Self.Model],
+        in context: NSManagedObjectContext,
+        with appContext: inout Any?
+    ) -> [Self]
+    {
+        models.map { uuCreate(from: $0, in: context, with: &appContext) }
+    }
+
+    static func uuCreateArray(
+        from models: [Self.Model],
+        in context: NSManagedObjectContext
+    ) -> [Self]
+    {
+        var devNull: Any? = nil
+        return uuCreateArray(from: models, in: context, with: &devNull)
+    }
+}
+
+/*
+public extension UUEntityModelConvertible where Self: NSManagedObject
+{
     @discardableResult
     static func uuCreate<M, Entity>(
         from model: M,
@@ -879,7 +926,7 @@ public extension UUEntityModelConvertible where Self: NSManagedObject
         var devNull: Any? = nil
         return uuCreateSet(from: models, in: context, with: &devNull)
     }
-}
+}*/
 
 /*
 public extension NSManagedObject

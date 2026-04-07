@@ -25,6 +25,42 @@ final class UUCoreDataTests: XCTestCase
     /// A dummy model name that does *not* exist in the bundle
     private let nonexistentModelName = "ModelThatDoesNotExist"
 
+    /// Resets/opens a stack with a unique SQLite store name, then runs `work` on a background context.
+    private func performOnPlayerStack(
+        storeLabel: String,
+        work: @escaping (NSManagedObjectContext) -> Void
+    )
+    {
+        let model = createTestModel()
+        let stack = UUCoreDataStack(
+            modelFileName: storeLabel,
+            model: model,
+            storeType: NSSQLiteStoreType
+        )
+
+        let resetExp = expectation(description: "reset \(storeLabel)")
+        stack.reset { error in
+            XCTAssertNil(error, "Reset failed")
+            resetExp.fulfill()
+        }
+        waitForExpectations(timeout: 2)
+
+        let openExp = expectation(description: "open \(storeLabel)")
+        stack.open { error in
+            XCTAssertNil(error, "Open failed")
+            openExp.fulfill()
+        }
+        waitForExpectations(timeout: 2)
+
+        let taskExp = expectation(description: "background \(storeLabel)")
+        stack.performBackgroundTask { context in
+            work(context)
+        } completion: { _ in
+            taskExp.fulfill()
+        }
+        waitForExpectations(timeout: 10)
+    }
+
     // MARK: - init
     
     func testInitWithModel()
@@ -499,8 +535,223 @@ final class UUCoreDataTests: XCTestCase
         
         waitForExpectations(timeout: 5)
     }
-
     
+    
+    func testUUCreate()
+    {
+        // Arrange: Create stack with a fresh store
+        let model = createTestModel()
+        let stack = UUCoreDataStack(
+            modelFileName: "InsertFetchModel",
+            model: model,
+            storeType: NSSQLiteStoreType
+        )
+        
+        // Ensure clean state
+        let resetExpectation = expectation(description: "Reset before insert")
+        stack.reset { error in
+            XCTAssertNil(error, "Reset should succeed before starting test")
+            resetExpectation.fulfill()
+        }
+        waitForExpectations(timeout: 1)
+        
+        let openExpectation = expectation(description: "Open stack")
+        stack.open { error in
+            XCTAssertNil(error, "Open should succeed")
+            openExpectation.fulfill()
+        }
+        waitForExpectations(timeout: 1)
+
+        let taskExpectation = expectation(description: "Background task")
+        stack.performBackgroundTask
+        { context in
+            
+            let id = UUID()
+            
+            let player = Player(
+                identifier: id,
+                name: "A player",
+                number: 44,
+                gamesPlayed: 29,
+                nickName: "hello")
+            
+            PlayerEntity.uuCreate(from: player, in: context)
+            
+            let saveError = context.uuSave()
+            XCTAssertNil(saveError)
+            
+            // Fetch the entity back
+            let fetchRequest: NSFetchRequest<PlayerEntity> = PlayerEntity.fetchRequest()
+            fetchRequest.predicate = NSPredicate(format: "identifier == %@", id as CVarArg)
+            
+            let fetchedResults = try? context.fetch(fetchRequest)
+            
+            // Assert: Validate fields
+            XCTAssertEqual(fetchedResults?.count, 1)
+            guard let fetchedPlayer = fetchedResults?.first else {
+                XCTFail("Failed to fetch inserted PlayerEntity")
+                return
+            }
+            
+            XCTAssertEqual(fetchedPlayer.identifier, id)
+            XCTAssertEqual(fetchedPlayer.name, "A player")
+            XCTAssertEqual(fetchedPlayer.number, 44)
+            XCTAssertEqual(fetchedPlayer.gamesPlayed, 29)
+            XCTAssertEqual(fetchedPlayer.nickName, "hello")
+            
+        } completion:
+        { error in
+            taskExpectation.fulfill()
+        }
+        
+        waitForExpectations(timeout: 5)
+    }
+
+    // MARK: - UUEntityModelConvertible uuCreate
+
+    func test_uuCreate_returnValueMatchesPersistedRow()
+    {
+        performOnPlayerStack(storeLabel: "uuCreate_returnValue")
+        { context in
+            let id = UUID()
+            let model = Player(
+                identifier: id,
+                name: "Returned",
+                number: 7,
+                gamesPlayed: 3,
+                nickName: "nick")
+
+            let created = PlayerEntity.uuCreate(from: model, in: context)
+            XCTAssertEqual(created.identifier, id)
+            XCTAssertEqual(created.name, "Returned")
+            XCTAssertEqual(created.number, 7)
+            XCTAssertEqual(created.gamesPlayed, 3)
+            XCTAssertEqual(created.nickName, "nick")
+
+            XCTAssertNil(context.uuSave())
+
+            let req = PlayerEntity.fetchRequest()
+            req.predicate = NSPredicate(format: "identifier == %@", id as CVarArg)
+            let rows = try? context.fetch(req)
+            XCTAssertEqual(rows?.count, 1)
+            XCTAssertTrue(rows?.first === created)
+        }
+    }
+
+    func test_uuCreate_withNilNickName()
+    {
+        performOnPlayerStack(storeLabel: "uuCreate_nilNick")
+        { context in
+            let id = UUID()
+            let model = Player(
+                identifier: id,
+                name: "NoNick",
+                number: 1,
+                gamesPlayed: 0,
+                nickName: nil)
+
+            let created = PlayerEntity.uuCreate(from: model, in: context)
+            XCTAssertNil(created.nickName)
+            XCTAssertNil(context.uuSave())
+
+            let req = PlayerEntity.fetchRequest()
+            req.predicate = NSPredicate(format: "identifier == %@", id as CVarArg)
+            let rows = try? context.fetch(req)
+            XCTAssertEqual(rows?.first?.nickName, nil)
+        }
+    }
+
+    func test_uuCreate_withAppContext_parameterSurvivesCall()
+    {
+        performOnPlayerStack(storeLabel: "uuCreate_appCtx")
+        { context in
+            let id = UUID()
+            let model = Player(
+                identifier: id,
+                name: "Ctx",
+                number: 2,
+                gamesPlayed: 1,
+                nickName: nil)
+
+            var appContext: Any? = ["token": 42]
+            _ = PlayerEntity.uuCreate(from: model, in: context, with: &appContext)
+            XCTAssertNotNil(appContext)
+            let dict = appContext as? [String: Int]
+            XCTAssertEqual(dict?["token"], 42)
+
+            XCTAssertNil(context.uuSave())
+        }
+    }
+
+    func test_uuCreateArray_multipleModels_allInserted()
+    {
+        performOnPlayerStack(storeLabel: "uuCreateArray_multi")
+        { context in
+            let id1 = UUID(), id2 = UUID(), id3 = UUID()
+            let models = [
+                Player(identifier: id1, name: "A", number: 1, gamesPlayed: 10, nickName: "a"),
+                Player(identifier: id2, name: "B", number: 2, gamesPlayed: 20, nickName: "b"),
+                Player(identifier: id3, name: "C", number: 3, gamesPlayed: 30, nickName: nil),
+            ]
+
+            let created = PlayerEntity.uuCreateArray(from: models, in: context)
+            XCTAssertEqual(created.count, 3)
+            XCTAssertEqual(Set(created.map(\.identifier)), Set([id1, id2, id3]))
+
+            XCTAssertNil(context.uuSave())
+
+            let req = PlayerEntity.fetchRequest()
+            let rows = try? context.fetch(req)
+            XCTAssertEqual(rows?.count, 3)
+        }
+    }
+
+    func test_uuCreateArray_empty_noObjects()
+    {
+        performOnPlayerStack(storeLabel: "uuCreateArray_empty")
+        { context in
+            let created = PlayerEntity.uuCreateArray(from: [], in: context)
+            XCTAssertTrue(created.isEmpty)
+            XCTAssertNil(context.uuSave())
+
+            let req = PlayerEntity.fetchRequest()
+            let rows = try? context.fetch(req)
+            XCTAssertEqual(rows?.count, 0)
+        }
+    }
+
+    func test_uuCreateArray_withAppContext()
+    {
+        performOnPlayerStack(storeLabel: "uuCreateArray_appCtx")
+        { context in
+            let models = [
+                Player(identifier: UUID(), name: "X", number: 0, gamesPlayed: 0, nickName: nil),
+            ]
+            var appContext: Any? = "marker"
+            let out = PlayerEntity.uuCreateArray(from: models, in: context, with: &appContext)
+            XCTAssertEqual(out.count, 1)
+            XCTAssertEqual(appContext as? String, "marker")
+            XCTAssertNil(context.uuSave())
+        }
+    }
+
+    func test_asModels_mapsFetchedEntitiesToPlayer()
+    {
+        performOnPlayerStack(storeLabel: "asModels_roundTrip")
+        { context in
+            let p1 = Player(identifier: UUID(), name: "M1", number: 5, gamesPlayed: 5, nickName: "m")
+            let p2 = Player(identifier: UUID(), name: "M2", number: 6, gamesPlayed: 6, nickName: nil)
+            _ = PlayerEntity.uuCreateArray(from: [p1, p2], in: context)
+            XCTAssertNil(context.uuSave())
+
+            let req = PlayerEntity.fetchRequest()
+            let rows = (try? context.fetch(req)) ?? []
+            let models = rows.asModels
+            XCTAssertEqual(models.count, 2)
+            XCTAssertTrue(models.contains { $0.identifier == p1.identifier && $0.name == "M1" && $0.nickName == "m" })
+            XCTAssertTrue(models.contains { $0.identifier == p2.identifier && $0.name == "M2" && $0.nickName == nil })
+        }
+    }
 }
 
 
@@ -512,6 +763,39 @@ class PlayerEntity: NSManagedObject, Identifiable
     @NSManaged public var number: Int16
     @NSManaged public var gamesPlayed: Int32
     @NSManaged public var nickName: String?
+}
+
+struct Player: Codable
+{
+    var identifier: UUID
+    var name: String
+    var number: Int16
+    var gamesPlayed: Int32
+    var nickName: String?
+}
+
+extension PlayerEntity: UUEntityModelConvertible
+{
+    typealias Model = Player
+        
+    var asModel: Player
+    {
+        return Player(
+            identifier: self.identifier,
+            name: self.name,
+            number: self.number,
+            gamesPlayed: self.gamesPlayed,
+            nickName: self.nickName)
+    }
+    
+    func populate(from: Model, context: NSManagedObjectContext, appContext: inout Any?)
+    {
+        self.identifier = from.identifier
+        self.name = from.name
+        self.number = from.number
+        self.gamesPlayed = from.gamesPlayed
+        self.nickName = from.nickName
+    }
 }
 
 extension PlayerEntity
