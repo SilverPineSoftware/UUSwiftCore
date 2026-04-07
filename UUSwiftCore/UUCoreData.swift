@@ -814,7 +814,7 @@ public extension Array where Element: NSManagedObject & UUEntityModelConvertible
     }
 }
 
-public extension NSManagedObject
+public extension UUEntityModelConvertible where Self: NSManagedObject
 {
     @discardableResult
     static func uuCreate<M, Entity>(
