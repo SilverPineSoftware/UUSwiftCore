@@ -38,7 +38,7 @@ import Foundation
 public struct UULog
 {
     /// The logger instance used to handle log messages.
-    private static var logger: UULogger? = nil
+    nonisolated(unsafe) private static var logger: UULogger? = nil
 
     /// Initializes the current logger `UULog` with an optional logger.
     ///

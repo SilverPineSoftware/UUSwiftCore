@@ -28,8 +28,8 @@ final class UUCoreDataTests: XCTestCase
     /// Resets/opens a stack with a unique SQLite store name, then runs `work` on a background context.
     private func performOnPlayerStack(
         storeLabel: String,
-        work: @escaping (NSManagedObjectContext) -> Void
-    )
+        work: @escaping (NSManagedObjectContext) throws -> Void
+    ) async
     {
         let model = createTestModel()
         let stack = UUCoreDataStack(
@@ -38,27 +38,12 @@ final class UUCoreDataTests: XCTestCase
             storeType: NSSQLiteStoreType
         )
 
-        let resetExp = expectation(description: "reset \(storeLabel)")
-        stack.reset { error in
-            XCTAssertNil(error, "Reset failed")
-            resetExp.fulfill()
-        }
-        waitForExpectations(timeout: 2)
-
-        let openExp = expectation(description: "open \(storeLabel)")
-        stack.open { error in
-            XCTAssertNil(error, "Open failed")
-            openExp.fulfill()
-        }
-        waitForExpectations(timeout: 2)
-
-        let taskExp = expectation(description: "background \(storeLabel)")
-        stack.performBackgroundTask { context in
-            work(context)
-        } completion: { _ in
-            taskExp.fulfill()
-        }
-        waitForExpectations(timeout: 10)
+        let resetError = await stack.reset()
+        XCTAssertNil(resetError, "Reset failed")
+        let openError = await stack.open()
+        XCTAssertNil(openError, "Open failed")
+        let taskError = await stack.performBackgroundTask(block: work)
+        XCTAssertNil(taskError)
     }
 
     // MARK: - init
@@ -171,23 +156,17 @@ final class UUCoreDataTests: XCTestCase
 
     // MARK: – reset()
 
-    func testResetWithoutExistingFileSucceeds()
+    func testResetWithoutExistingFileSucceeds() async
     {
         let stack = UUCoreDataStack(modelFileName: "Whatever",
                                     storeType: NSInMemoryStoreType)
-        let expectation = self.expectation(description: "reset completion")
 
-        stack.reset
-        { error in
-            // No file existed, so reset should silently succeed without error
-            XCTAssertNil(error)
-            expectation.fulfill()
-        }
-
-        waitForExpectations(timeout: 1)
+        // No file existed, so reset should silently succeed without error
+        let error = await stack.reset()
+        XCTAssertNil(error)
     }
     
-    func testResetWithExistingFileRemovesFile()
+    func testResetWithExistingFileRemovesFile() async
     {
         // Given
         let modelName = "ExistingFileModel"
@@ -212,19 +191,14 @@ final class UUCoreDataTests: XCTestCase
         XCTAssertTrue(FileManager.default.fileExists(atPath: fileURL.path), "Dummy store file should exist before reset")
 
         // When
-        let exp = expectation(description: "reset completion for existing file")
-        stack.reset
-        { error in
-            // Then
-            XCTAssertNil(error, "Reset should not error when deleting existing file")
-            XCTAssertFalse(FileManager.default.fileExists(atPath: fileURL.path), "Store file should be removed by reset()")
-            exp.fulfill()
-        }
+        let error = await stack.reset()
 
-        waitForExpectations(timeout: 1)
+        // Then
+        XCTAssertNil(error, "Reset should not error when deleting existing file")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: fileURL.path), "Store file should be removed by reset()")
     }
     
-    func testResetFailsWhenFileIsImmutable()
+    func testResetFailsWhenFileIsImmutable() async
     {
         // Given
         let modelName = "ImmutableFileModel"
@@ -253,20 +227,15 @@ final class UUCoreDataTests: XCTestCase
         try? fileURL.setResourceValues(values)
 
         // When
-        let exp = expectation(description: "reset fails due to immutable file")
-        stack.reset
-        { error in
-            // Then
-            XCTAssertNotNil(error, "Reset should fail when file cannot be deleted")
-            exp.fulfill()
-        }
+        let error = await stack.reset()
 
-        waitForExpectations(timeout: 1)
+        // Then
+        XCTAssertNotNil(error, "Reset should fail when file cannot be deleted")
     }
 
-    // MARK: – open(completion:)
+    // MARK: – open()
     
-    func testOpenWithExplicitBundleInitFailsWhenModelMissing()
+    func testOpenWithExplicitBundleInitFailsWhenModelMissing() async
     {
         // Given: a bundle (the test bundle) that has no model named "NonexistentModel.momd"
         let stack = UUCoreDataStack(
@@ -275,43 +244,30 @@ final class UUCoreDataTests: XCTestCase
             storeType: NSSQLiteStoreType
         )
         
-        let exp = expectation(description: "open completion for missing explicit‐bundle model")
-
         // When
-        stack.open
-        { error in
-            // Then
-            XCTAssertNotNil(error, "Expected an error when the model can't be found in the given bundle")
-            let nsErr = error! as NSError
-            XCTAssertEqual(nsErr.domain, UUCoreDataErrorDomain)
-            XCTAssertEqual(nsErr.code, UUCoreDataErrorCode.modelFileNotFound.rawValue)
-            exp.fulfill()
-        }
+        let error = await stack.open()
 
-        waitForExpectations(timeout: 1)
+        // Then
+        XCTAssertNotNil(error, "Expected an error when the model can't be found in the given bundle")
+        let nsErr = error! as NSError
+        XCTAssertEqual(nsErr.domain, UUCoreDataErrorDomain)
+        XCTAssertEqual(nsErr.code, UUCoreDataErrorCode.modelFileNotFound.rawValue)
     }
 
-    func testOpenWithNonexistentModelReturnsModelNotFoundError()
+    func testOpenWithNonexistentModelReturnsModelNotFoundError() async
     {
         let stack = UUCoreDataStack(modelFileName: nonexistentModelName,
                                     storeType: NSInMemoryStoreType)
 
-        let expectation = self.expectation(description: "open completion")
+        let error = await stack.open()
+        XCTAssertNotNil(error, "Expected an error when the model is missing")
 
-        stack.open { error in
-            XCTAssertNotNil(error, "Expected an error when the model is missing")
-
-            let nsError = error! as NSError
-            XCTAssertEqual(nsError.domain, UUCoreDataErrorDomain)
-            XCTAssertEqual(nsError.code, UUCoreDataErrorCode.modelFileNotFound.rawValue)
-
-            expectation.fulfill()
-        }
-
-        waitForExpectations(timeout: 1)
+        let nsError = error! as NSError
+        XCTAssertEqual(nsError.domain, UUCoreDataErrorDomain)
+        XCTAssertEqual(nsError.code, UUCoreDataErrorCode.modelFileNotFound.rawValue)
     }
     
-    func testOpenFailsUnableToLoadModelWhenMomdPresentButInvalid()
+    func testOpenFailsUnableToLoadModelWhenMomdPresentButInvalid() async
     {
         // Given: set up a temporary “bundle” with an empty .momd directory
         let modelName = "InvalidModel"
@@ -351,23 +307,17 @@ final class UUCoreDataTests: XCTestCase
             storeType: NSSQLiteStoreType
         )
         
-        let exp = expectation(description: "open completion for invalid .momd")
-        
         // When
-        stack.open
-        { error in
-            // Then
-            XCTAssertNotNil(error, "Expected an error when .momd exists but is invalid")
-            let nsErr = error! as NSError
-            XCTAssertEqual(nsErr.domain, UUCoreDataErrorDomain)
-            XCTAssertEqual(nsErr.code, UUCoreDataErrorCode.unableToLoadModel.rawValue)
-            exp.fulfill()
-        }
-        
-        waitForExpectations(timeout: 1)
+        let error = await stack.open()
+
+        // Then
+        XCTAssertNotNil(error, "Expected an error when .momd exists but is invalid")
+        let nsErr = error! as NSError
+        XCTAssertEqual(nsErr.domain, UUCoreDataErrorDomain)
+        XCTAssertEqual(nsErr.code, UUCoreDataErrorCode.unableToLoadModel.rawValue)
     }
     
-    func testOpenFailsLoadPersistentStoresFailedWhenStoreURLIsDirectory()
+    func testOpenFailsLoadPersistentStoresFailedWhenStoreURLIsDirectory() async
     {
         // Given: a valid model but the store URL is a directory, causing persistent store load to fail
         let testModel = createTestModel()
@@ -387,23 +337,17 @@ final class UUCoreDataTests: XCTestCase
         XCTAssertTrue(FileManager.default.fileExists(atPath: storeURL.path),
                       "Directory should exist at storeURL before opening")
 
-        let exp = expectation(description: "open completion when store URL is a directory")
-
         // When
-        stack.open
-        { error in
-            // Then
-            XCTAssertNotNil(error,
-                            "Expected an error when loadPersistentStores fails due to storeURL being a directory")
-            let nsErr = error! as NSError
-            XCTAssertEqual(nsErr.domain, UUCoreDataErrorDomain)
-            XCTAssertEqual(nsErr.code, UUCoreDataErrorCode.loadPersistentStoresFailed.rawValue)
-            XCTAssertNotNil(nsErr.userInfo[NSUnderlyingErrorKey],
-                            "Underlying error should be present in userInfo")
-            exp.fulfill()
-        }
+        let error = await stack.open()
 
-        waitForExpectations(timeout: 1)
+        // Then
+        XCTAssertNotNil(error,
+                        "Expected an error when loadPersistentStores fails due to storeURL being a directory")
+        let nsErr = error! as NSError
+        XCTAssertEqual(nsErr.domain, UUCoreDataErrorDomain)
+        XCTAssertEqual(nsErr.code, UUCoreDataErrorCode.loadPersistentStoresFailed.rawValue)
+        XCTAssertNotNil(nsErr.userInfo[NSUnderlyingErrorKey],
+                        "Underlying error should be present in userInfo")
     }
     
     /// A fake NSPersistentStore subclass that always fails to load metadata.
@@ -427,7 +371,7 @@ final class UUCoreDataTests: XCTestCase
         }
     }
 
-    func testOpenWithRegisteredFailingStoreTypeInvokesLoadPersistentStoresFailed()
+    func testOpenWithRegisteredFailingStoreTypeInvokesLoadPersistentStoresFailed() async
     {
         // Default apple behavior fails with a fatalError when an unregistered or unknown store type is used.
 
@@ -445,30 +389,23 @@ final class UUCoreDataTests: XCTestCase
             folder: .cachesDirectory
         )
         
-        let exp = expectation(description: "open completion for stub store")
+        // 3) Call open() and assert you get your wrapped error
+        let error = await stack.open()
+        XCTAssertNotNil(error, "Expected loadPersistentStoresFailed")
+        let nsErr = error! as NSError
+        XCTAssertEqual(nsErr.domain, UUCoreDataErrorDomain)
+        XCTAssertEqual(
+            nsErr.code,
+            UUCoreDataErrorCode.loadPersistentStoresFailed.rawValue
+        )
 
-        // 3) Call open(…) and assert you get your wrapped error
-        stack.open
-        { error in
-            XCTAssertNotNil(error, "Expected loadPersistentStoresFailed")
-            let nsErr = error! as NSError
-            XCTAssertEqual(nsErr.domain, UUCoreDataErrorDomain)
-            XCTAssertEqual(
-                nsErr.code,
-                UUCoreDataErrorCode.loadPersistentStoresFailed.rawValue
-            )
-        
-            // And the underlying should be our stub’s error
-            let underlying = nsErr.userInfo[NSUnderlyingErrorKey] as? NSError
-            XCTAssertEqual(underlying?.domain, "TestDomain")
-            XCTAssertEqual(underlying?.code, 5678)
-            exp.fulfill()
-        }
-
-        waitForExpectations(timeout: 1)
+        // And the underlying should be our stub’s error
+        let underlying = nsErr.userInfo[NSUnderlyingErrorKey] as? NSError
+        XCTAssertEqual(underlying?.domain, "TestDomain")
+        XCTAssertEqual(underlying?.code, 5678)
     }
     
-    func testInsertAndFetchPlayerEntity()
+    func testInsertAndFetchPlayerEntity() async
     {
         // Arrange: Create stack with a fresh store
         let model = createTestModel()
@@ -478,25 +415,13 @@ final class UUCoreDataTests: XCTestCase
             storeType: NSSQLiteStoreType
         )
         
-        // Ensure clean state
-        let resetExpectation = expectation(description: "Reset before insert")
-        stack.reset { error in
-            XCTAssertNil(error, "Reset should succeed before starting test")
-            resetExpectation.fulfill()
-        }
-        waitForExpectations(timeout: 1)
-        
-        let openExpectation = expectation(description: "Open stack")
-        stack.open { error in
-            XCTAssertNil(error, "Open should succeed")
-            openExpectation.fulfill()
-        }
-        waitForExpectations(timeout: 1)
+        let resetError = await stack.reset()
+        XCTAssertNil(resetError, "Reset should succeed before starting test")
+        let openError = await stack.open()
+        XCTAssertNil(openError, "Open should succeed")
 
-        let taskExpectation = expectation(description: "Background task")
-        stack.performBackgroundTask
+        let taskError = await stack.performBackgroundTask
         { context in
-            
             // Act: Insert PlayerEntity
             let id = UUID()
             let player = PlayerEntity(context: context)
@@ -505,39 +430,34 @@ final class UUCoreDataTests: XCTestCase
             player.number = 99
             player.gamesPlayed = 42
             player.nickName = "Slugger"
-            
+
             let saveError = context.uuSave()
             XCTAssertNil(saveError)
-            
+
             // Fetch the entity back
             let fetchRequest: NSFetchRequest<PlayerEntity> = PlayerEntity.fetchRequest()
             fetchRequest.predicate = NSPredicate(format: "identifier == %@", id as CVarArg)
-            
+
             let fetchedResults = try? context.fetch(fetchRequest)
-            
+
             // Assert: Validate fields
             XCTAssertEqual(fetchedResults?.count, 1)
             guard let fetchedPlayer = fetchedResults?.first else {
                 XCTFail("Failed to fetch inserted PlayerEntity")
                 return
             }
-            
+
             XCTAssertEqual(fetchedPlayer.identifier, id)
             XCTAssertEqual(fetchedPlayer.name, "Test Player")
             XCTAssertEqual(fetchedPlayer.number, 99)
             XCTAssertEqual(fetchedPlayer.gamesPlayed, 42)
             XCTAssertEqual(fetchedPlayer.nickName, "Slugger")
-            
-        } completion:
-        { error in
-            taskExpectation.fulfill()
         }
-        
-        waitForExpectations(timeout: 5)
+        XCTAssertNil(taskError)
     }
     
     
-    func testUUCreate()
+    func testUUCreate() async
     {
         // Arrange: Create stack with a fresh store
         let model = createTestModel()
@@ -547,71 +467,52 @@ final class UUCoreDataTests: XCTestCase
             storeType: NSSQLiteStoreType
         )
         
-        // Ensure clean state
-        let resetExpectation = expectation(description: "Reset before insert")
-        stack.reset { error in
-            XCTAssertNil(error, "Reset should succeed before starting test")
-            resetExpectation.fulfill()
-        }
-        waitForExpectations(timeout: 1)
-        
-        let openExpectation = expectation(description: "Open stack")
-        stack.open { error in
-            XCTAssertNil(error, "Open should succeed")
-            openExpectation.fulfill()
-        }
-        waitForExpectations(timeout: 1)
+        let resetError = await stack.reset()
+        XCTAssertNil(resetError, "Reset should succeed before starting test")
+        let openError = await stack.open()
+        XCTAssertNil(openError, "Open should succeed")
 
-        let taskExpectation = expectation(description: "Background task")
-        stack.performBackgroundTask
+        let taskError = await stack.performBackgroundTask
         { context in
-            
             let id = UUID()
-            
+
             let player = Player(
                 identifier: id,
                 name: "A player",
                 number: 44,
                 gamesPlayed: 29,
                 nickName: "hello")
-            
+
             PlayerEntity.uuCreate(from: player, in: context)
-            
+
             let saveError = context.uuSave()
             XCTAssertNil(saveError)
-            
-            // Fetch the entity back
+
             let fetchRequest: NSFetchRequest<PlayerEntity> = PlayerEntity.fetchRequest()
             fetchRequest.predicate = NSPredicate(format: "identifier == %@", id as CVarArg)
-            
+
             let fetchedResults = try? context.fetch(fetchRequest)
-            
-            // Assert: Validate fields
+
             XCTAssertEqual(fetchedResults?.count, 1)
             guard let fetchedPlayer = fetchedResults?.first else {
                 XCTFail("Failed to fetch inserted PlayerEntity")
                 return
             }
-            
+
             XCTAssertEqual(fetchedPlayer.identifier, id)
             XCTAssertEqual(fetchedPlayer.name, "A player")
             XCTAssertEqual(fetchedPlayer.number, 44)
             XCTAssertEqual(fetchedPlayer.gamesPlayed, 29)
             XCTAssertEqual(fetchedPlayer.nickName, "hello")
-            
-        } completion:
-        { error in
-            taskExpectation.fulfill()
         }
-        
-        waitForExpectations(timeout: 5)
+        XCTAssertNil(taskError)
     }
 
     // MARK: - UUEntityModelConvertible uuCreate
 
-    func test_uuCreate_returnValueMatchesPersistedRow()
+    func test_uuCreate_returnValueMatchesPersistedRow() async
     {
-        performOnPlayerStack(storeLabel: "uuCreate_returnValue")
+        await performOnPlayerStack(storeLabel: "uuCreate_returnValue")
         { context in
             let id = UUID()
             let model = Player(
@@ -638,9 +539,9 @@ final class UUCoreDataTests: XCTestCase
         }
     }
 
-    func test_uuCreate_withNilNickName()
+    func test_uuCreate_withNilNickName() async
     {
-        performOnPlayerStack(storeLabel: "uuCreate_nilNick")
+        await performOnPlayerStack(storeLabel: "uuCreate_nilNick")
         { context in
             let id = UUID()
             let model = Player(
@@ -661,9 +562,9 @@ final class UUCoreDataTests: XCTestCase
         }
     }
 
-    func test_uuCreate_withAppContext_parameterSurvivesCall()
+    func test_uuCreate_withAppContext_parameterSurvivesCall() async
     {
-        performOnPlayerStack(storeLabel: "uuCreate_appCtx")
+        await performOnPlayerStack(storeLabel: "uuCreate_appCtx")
         { context in
             let id = UUID()
             let model = Player(
@@ -683,9 +584,9 @@ final class UUCoreDataTests: XCTestCase
         }
     }
 
-    func test_uuCreateArray_multipleModels_allInserted()
+    func test_uuCreateArray_multipleModels_allInserted() async
     {
-        performOnPlayerStack(storeLabel: "uuCreateArray_multi")
+        await performOnPlayerStack(storeLabel: "uuCreateArray_multi")
         { context in
             let id1 = UUID(), id2 = UUID(), id3 = UUID()
             let models = [
@@ -706,9 +607,9 @@ final class UUCoreDataTests: XCTestCase
         }
     }
 
-    func test_uuCreateArray_empty_noObjects()
+    func test_uuCreateArray_empty_noObjects() async
     {
-        performOnPlayerStack(storeLabel: "uuCreateArray_empty")
+        await performOnPlayerStack(storeLabel: "uuCreateArray_empty")
         { context in
             let created = PlayerEntity.uuCreateArray(from: [], in: context)
             XCTAssertTrue(created.isEmpty)
@@ -720,9 +621,9 @@ final class UUCoreDataTests: XCTestCase
         }
     }
 
-    func test_uuCreateArray_withAppContext()
+    func test_uuCreateArray_withAppContext() async
     {
-        performOnPlayerStack(storeLabel: "uuCreateArray_appCtx")
+        await performOnPlayerStack(storeLabel: "uuCreateArray_appCtx")
         { context in
             let models = [
                 Player(identifier: UUID(), name: "X", number: 0, gamesPlayed: 0, nickName: nil),
@@ -737,9 +638,9 @@ final class UUCoreDataTests: XCTestCase
 
     // MARK: - UUEntityModelConvertible uuCreateSet
 
-    func test_uuCreateSet_multipleModels_returnsSetAndPersistsAll()
+    func test_uuCreateSet_multipleModels_returnsSetAndPersistsAll() async
     {
-        performOnPlayerStack(storeLabel: "uuCreateSet_multi")
+        await performOnPlayerStack(storeLabel: "uuCreateSet_multi")
         { context in
             let id1 = UUID(), id2 = UUID(), id3 = UUID()
             let models = [
@@ -760,9 +661,9 @@ final class UUCoreDataTests: XCTestCase
         }
     }
 
-    func test_uuCreateSet_empty_returnsEmptySet()
+    func test_uuCreateSet_empty_returnsEmptySet() async
     {
-        performOnPlayerStack(storeLabel: "uuCreateSet_empty")
+        await performOnPlayerStack(storeLabel: "uuCreateSet_empty")
         { context in
             let created = PlayerEntity.uuCreateSet(from: [], in: context)
             XCTAssertTrue(created.isEmpty)
@@ -774,9 +675,9 @@ final class UUCoreDataTests: XCTestCase
         }
     }
 
-    func test_uuCreateSet_withAppContext()
+    func test_uuCreateSet_withAppContext() async
     {
-        performOnPlayerStack(storeLabel: "uuCreateSet_appCtx")
+        await performOnPlayerStack(storeLabel: "uuCreateSet_appCtx")
         { context in
             let models = [
                 Player(identifier: UUID(), name: "SetCtx", number: 0, gamesPlayed: 0, nickName: nil),
@@ -789,9 +690,9 @@ final class UUCoreDataTests: XCTestCase
         }
     }
 
-    func test_asModels_mapsFetchedEntitiesToPlayer()
+    func test_asModels_mapsFetchedEntitiesToPlayer() async
     {
-        performOnPlayerStack(storeLabel: "asModels_roundTrip")
+        await performOnPlayerStack(storeLabel: "asModels_roundTrip")
         { context in
             let p1 = Player(identifier: UUID(), name: "M1", number: 5, gamesPlayed: 5, nickName: "m")
             let p2 = Player(identifier: UUID(), name: "M2", number: 6, gamesPlayed: 6, nickName: nil)

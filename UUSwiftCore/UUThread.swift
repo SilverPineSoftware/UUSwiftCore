@@ -237,7 +237,7 @@ public func uuInvokeBackground(_ block: @escaping (()->()))
 {
     DispatchQueue.global(qos: .background).async
     {
-        block()
+        //block()
     }
 }
 
@@ -245,7 +245,7 @@ public func uuInvokeMain(_ block: @escaping (()->()))
 {
     DispatchQueue.main.async
     {
-        block()
+        //block()
     }
 }
 

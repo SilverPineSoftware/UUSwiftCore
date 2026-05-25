@@ -57,7 +57,7 @@ public class UUDataCache : NSObject, UUDataCacheProtocol
     ////////////////////////////////////////////////////////////////////////////
     // Class Data Memebers
     ////////////////////////////////////////////////////////////////////////////
-    public static let shared = UUDataCache()
+    nonisolated(unsafe) public static let shared = UUDataCache()
     
     ////////////////////////////////////////////////////////////////////////////
     // Instance Data Memebers
@@ -322,7 +322,7 @@ public class UUDataCache : NSObject, UUDataCacheProtocol
 private class UUDataCacheDb
 {
 	private static let cacheKeyName = "UUDataCacheDb"
-    static let shared = UUDataCacheDb()
+    nonisolated(unsafe) static let shared = UUDataCacheDb()
 	
     let mutex = NSRecursiveLock()
 	var metaData : [String : Any] = [:]

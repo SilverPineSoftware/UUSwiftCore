@@ -1,12 +1,13 @@
-// swift-tools-version:5.3
+// swift-tools-version:6.2
 // The swift-tools-version declares the minimum version of Swift required to build this package.
+
 import PackageDescription
 
 let package = Package(
 	name: "UUSwiftCore",
 	platforms: [
-		.iOS(.v13),
-		.macOS(.v10_15)
+		.iOS(.v15),
+		.macOS(.v11)
 	],
 
 	products: [
@@ -37,8 +38,9 @@ let package = Package(
             path: "Tests",
             resources: [.process("Resources")]),
 	],
-	swiftLanguageVersions: [
+    swiftLanguageModes: [
 		.v4_2,
-		.v5
+		.v5,
+        .v6
 	]
 )

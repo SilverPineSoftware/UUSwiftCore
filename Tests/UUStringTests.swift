@@ -181,4 +181,68 @@ final class UUStringTests: XCTestCase
         let emptyData = Data()
         XCTAssertEqual(emptyData.uuToBinaryString(), "")
     }
+
+    // MARK: - uuGetMimeType (UTType / UniformTypeIdentifiers)
+
+    @available(macOS 11.0, iOS 14.0, *)
+    func test_uuGetMimeType_commonImageExtensions()
+    {
+        XCTAssertEqual("photo.jpg".uuGetMimeType(), "image/jpeg")
+        XCTAssertEqual("photo.jpeg".uuGetMimeType(), "image/jpeg")
+        XCTAssertEqual("icon.png".uuGetMimeType(), "image/png")
+        XCTAssertEqual("anim.gif".uuGetMimeType(), "image/gif")
+    }
+
+    @available(macOS 11.0, iOS 14.0, *)
+    func test_uuGetMimeType_commonDocumentExtensions()
+    {
+        XCTAssertEqual("data.json".uuGetMimeType(), "application/json")
+        XCTAssertEqual("readme.txt".uuGetMimeType(), "text/plain")
+        XCTAssertEqual("page.html".uuGetMimeType(), "text/html")
+        XCTAssertEqual("manual.pdf".uuGetMimeType(), "application/pdf")
+    }
+
+    @available(macOS 11.0, iOS 14.0, *)
+    func test_uuGetMimeType_pathAndMixedCaseExtension()
+    {
+        XCTAssertEqual("/var/mobile/photo.JPG".uuGetMimeType(), "image/jpeg")
+        XCTAssertEqual("folder/subdir/report.PDF".uuGetMimeType(), "application/pdf")
+    }
+
+    @available(macOS 11.0, iOS 14.0, *)
+    func test_uuGetMimeType_urlWithQueryString()
+    {
+        let url = "https://cdn.example.com/assets/banner.png?token=abc&size=2x"
+        XCTAssertEqual(url.uuGetMimeType(), "image/png")
+    }
+
+    @available(macOS 11.0, iOS 14.0, *)
+    func test_uuGetMimeType_noExtension_returnsNil()
+    {
+        XCTAssertNil("README".uuGetMimeType())
+        XCTAssertNil("".uuGetMimeType())
+    }
+
+    @available(macOS 11.0, iOS 14.0, *)
+    func test_uuGetMimeType_unknownExtension_returnsNil()
+    {
+        XCTAssertNil("file.notarealextension".uuGetMimeType())
+    }
+
+    @available(macOS 11.0, iOS 14.0, *)
+    func test_uuGetMimeType_table()
+    {
+        let cases: [(String, String?)] = [
+            ("a.jpg", "image/jpeg"),
+            ("a.png", "image/png"),
+            ("a.json", "application/json"),
+            ("a.zip", "application/zip"),
+            ("a.mp4", "video/mp4"),
+            ("no-dot", nil),
+        ]
+        for (input, expected) in cases
+        {
+            XCTAssertEqual(input.uuGetMimeType(), expected, "input=\(input)")
+        }
+    }
 }

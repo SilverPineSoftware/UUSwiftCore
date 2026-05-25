@@ -65,7 +65,7 @@ public extension Locale
 
 extension DateFormatter
 {
-    private static var uuSharedFormatterCache : Dictionary<String, DateFormatter> = Dictionary()
+    nonisolated(unsafe) private static var uuSharedFormatterCache : Dictionary<String, DateFormatter> = Dictionary()
     private static let lockingQueue: DispatchQueue = DispatchQueue(label: "UUDateFormatter_LockingQueue")
     
     private static func uuCacheLookupKey(_ format : String, _ timeZone: TimeZone, _ locale: Locale) -> String

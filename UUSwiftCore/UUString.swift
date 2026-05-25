@@ -7,12 +7,8 @@
 //  The only requirement is that you smile everytime you use it.
 //
 
-#if os(macOS)
-	import AppKit
-#else
-	import UIKit
-    import MobileCoreServices
-#endif
+import Foundation
+import UniformTypeIdentifiers
 
 public extension String
 {
@@ -326,29 +322,15 @@ public extension String
         return ext
     }
     
-    #if os(iOS)
-    
     func uuGetMimeType() -> String?
     {
         let ext = uuGetFileExtension()
-        
-        if let utiRef = UTTypeCreatePreferredIdentifierForTag(kUTTagClassFilenameExtension, ext as CFString, nil)
+        if let type = UTType(filenameExtension: ext)
         {
-            let uti = utiRef.takeUnretainedValue()
-            utiRef.release()
-            
-            if let mimeTypeRef = UTTypeCopyPreferredTagWithClass(uti, kUTTagClassMIMEType)
-            {
-                let mimeType = mimeTypeRef.takeUnretainedValue()
-                mimeTypeRef.release()
-                return mimeType as String
-            }
+            return type.preferredMIMEType
         }
-        
         return nil
     }
-    
-    #endif
 }
 
 public extension FixedWidthInteger

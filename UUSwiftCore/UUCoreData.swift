@@ -1184,7 +1184,7 @@ open class UUCoreDataStack
         }
     }
     
-    open func open(_ completion: @escaping ((Error?) -> Void))
+    open func open() async -> Error?
     {
         let model: NSManagedObjectModel
         
@@ -1194,8 +1194,7 @@ open class UUCoreDataStack
         }
         catch let err
         {
-            completion(err)
-            return
+            return err
         }
         
         let container = NSPersistentContainer(name: modelFileName, managedObjectModel: model)
@@ -1219,24 +1218,30 @@ open class UUCoreDataStack
 
         container.persistentStoreDescriptions = [description]
 
-        container.loadPersistentStores
-        { storeDesc, error in
+        return await withCheckedContinuation
+        { continuation in
             
-            if let err = error
-            {
-                let wrappedError = self.makeError(.loadPersistentStoresFailed, underlyingError: err)
-                completion(wrappedError)
-                return
-            }
-            
-            UULog.debug(tag: LOG_TAG, message: "Persistent store loaded: \(storeDesc)")
-            
-            self.persistenceContainer = container
-            completion(nil)
-        }
+            container.loadPersistentStores
+            { storeDesc, error in
+                
+                if let err = error
+                {
+                    let wrappedError = makeError(.loadPersistentStoresFailed, underlyingError: err)
+                    continuation.resume(returning: wrappedError)
+                    return
+                }
+                
+                UULog.debug(tag: LOG_TAG, message: "Persistent store loaded: \(storeDesc)")
 
-        container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-        container.viewContext.automaticallyMergesChangesFromParent = true
+                self.persistenceContainer = container
+
+                let policy = NSMergePolicy(merge: .mergeByPropertyObjectTrumpMergePolicyType)
+                container.viewContext.mergePolicy = policy
+                container.viewContext.automaticallyMergesChangesFromParent = true
+                
+                continuation.resume(returning: nil)
+            }
+        }
     }
     
     public func excludeFromBackup(_ isExcluded: Bool) -> Error?
@@ -1256,14 +1261,14 @@ open class UUCoreDataStack
             }
             catch let err
             {
-                result = self.makeError(.unableToSetBackupPropertyOnStoreFile, underlyingError: err)
+                result = makeError(.unableToSetBackupPropertyOnStoreFile, underlyingError: err)
             }
         }
         
         return result
     }
     
-    open func reset(_ completion: @escaping ((Error?) -> Void))
+    open func reset() async -> Error?
     {
         var resultError: Error? = nil
         
@@ -1287,153 +1292,55 @@ open class UUCoreDataStack
         }
         
         persistenceContainer = nil
-        completion(resultError)
+        return resultError
     }
     
-    /*
-    public func fetchObjects<T: NSManagedObject>(
-        predicate: NSPredicate? = nil,
-        sortDescriptors: [NSSortDescriptor]? = nil,
-        offset: Int? = nil,
-        limit: Int? = nil,
-        completion: @escaping (([T]?, Error?) -> Void))
-    {
-        let fr = NSFetchRequest<NSFetchRequestResult>(entityName: T.uuEntityName)
-        fr.sortDescriptors = sortDescriptors
-        fr.predicate = predicate
-        
-        if let offset = offset
-        {
-            fr.fetchOffset = offset
-        }
-        
-        if let limit = limit
-        {
-            fr.fetchLimit = limit
-        }
-        
-        fetchObjects(request: fr, completion: completion)
-    }
-    
-    public func fetchObjects<T: NSManagedObject>(
-        request: NSFetchRequest<NSFetchRequestResult>,
-        completion: @escaping (([T]?, Error?) -> Void))
-    {
-        var results: [T]? = nil
-        
-        performBackgroundTask(
-            block:
-            { context in
-                
-                results = try context.fetch(request) as? [T]
-            },
-            completion:
-            { err in
-                completion(results, err)
-            })
-    }
-    
-    public func deleteObjects(
-        entityName: String,
-        predicate: NSPredicate? = nil,
-        completion: @escaping ((Error?) -> Void))
-    {
-        performBackgroundTask(
-            block:
-            { context in
-                
-                let fr = NSFetchRequest<NSManagedObject>(entityName: entityName)
-                fr.predicate = predicate
-                
-                let results = try context.fetch(fr)
-                for result in results
-                {
-                    context.delete(result)
-                }
-                
-                try self.saveContext(context)
-            },
-            completion: completion)
-    }
-    
-    public func saveObject(
-        block: @escaping (NSManagedObjectContext) -> Void,
-        completion: @escaping ((Error?) -> Void))
-    {
-        performBackgroundTask(
-            block:
-            { context in
-                block(context)
-                try self.saveContext(context)
-            },
-            completion: completion)
-    }*/
-    
-    /*private func saveContext(_ context: NSManagedObjectContext) throws
-    {
-        if (context.hasChanges)
-        {
-            try context.save()
-        }
-    }*/
-    
-    private func getPersistenceContainer(_ completion: @escaping ((Result<NSPersistentContainer, Error>) -> Void))
+    private func getPersistenceContainer() async -> Result<NSPersistentContainer, Error>
     {
         if let container = persistenceContainer
         {
-            completion(.success(container))
-            return
+            return .success(container)
         }
         
-        self.open
-        { openError in
-            
-            if let err = openError
-            {
-                completion(.failure(err))
-            }
-            else if let container = self.persistenceContainer
-            {
-                completion(.success(container))
-            }
-            else
-            {
-                let err = self.makeError(.persistentContainerNotOpen)
-                completion(.failure(err))
-                return
-            }
+        let openError = await self.open()
+        
+        if let err = openError
+        {
+            return .failure(err)
+        }
+        else if let container = self.persistenceContainer
+        {
+            return .success(container)
+        }
+        else
+        {
+            let err = makeError(.persistentContainerNotOpen)
+            return .failure(err)
         }
     }
     
-    open func getBackgroundContext(
-        _ completion: @escaping (Result<NSManagedObjectContext, Error>) -> Void)
+    open func getBackgroundContext() async -> Result<NSManagedObjectContext, Error>
     {
-        getPersistenceContainer
-        { result in
+        let result = await getPersistenceContainer()
+        
+        switch (result)
+        {
+            case .failure(let err):
+                return .failure(err)
             
-            switch (result)
-            {
-                case .failure(let err):
-                    completion(.failure(err))
-                
-                case .success(let container):
-                completion(.success(container.newBackgroundContext()))
-            }
+            case .success(let container):
+                return .success(container.newBackgroundContext())
         }
     }
     
     open func performBackgroundTask(
-        block: @escaping (NSManagedObjectContext) throws -> Void,
-        completion: @escaping (Error?) -> Void)
+        block: @escaping (NSManagedObjectContext) throws -> Void) async -> Error?
     {
-        getBackgroundContext
-        { result in
-            
-            self.executeTask(result, block, completion)
-        }
+        let result = await getBackgroundContext()
+        return await executeTask(result, block)
     }
     
-    open func performBackgroundTaskAndWait(
+    /*open func performBackgroundTaskAndWait(
         block: @escaping (NSManagedObjectContext) throws -> Void) async -> Error?
     {
         return await withCheckedContinuation
@@ -1444,37 +1351,30 @@ open class UUCoreDataStack
                 continuation.resume(returning: error)
             }
         }
-    }
+    }*/
     
-    open func getMainContext(
-        _ completion: @escaping (Result<NSManagedObjectContext, Error>) -> Void)
+    open func getMainContext() async -> Result<NSManagedObjectContext, Error>
     {
-        getPersistenceContainer
-        { result in
+        let result = await getPersistenceContainer()
+        
+        switch (result)
+        {
+            case .failure(let err):
+                return .failure(err)
             
-            switch (result)
-            {
-                case .failure(let err):
-                    completion(.failure(err))
-                
-                case .success(let container):
-                    completion(.success(container.viewContext))
-            }
+            case .success(let container):
+                return .success(container.viewContext)
         }
     }
     
     open func performTask(
-        block: @escaping (NSManagedObjectContext) throws -> Void,
-        completion: @escaping (Error?) -> Void)
+        block: @escaping (NSManagedObjectContext) throws -> Void) async -> Error?
     {
-        getMainContext
-        { result in
-            
-            self.executeTask(result, block, completion)
-        }
+        let result = await getMainContext()
+        return await executeTask(result, block)
     }
     
-    open func performTaskAndWait(
+    /*open func performTaskAndWait(
         block: @escaping (NSManagedObjectContext) throws -> Void) async -> Error?
     {
         return await withCheckedContinuation
@@ -1485,51 +1385,56 @@ open class UUCoreDataStack
                 continuation.resume(returning: error)
             }
         }
-    }
+    }*/
     
     open func executeTask(
         _ result: Result<NSManagedObjectContext, Error>,
-        _ block: @escaping (NSManagedObjectContext) throws -> Void,
-        _ completion: @escaping (Error?) -> Void)
+        _ block: @escaping (NSManagedObjectContext) throws -> Void) async -> Error?
     {
         switch (result)
         {
             case .failure(let err):
-                completion(err)
+                return err
             
             case .success(let context):
             
-                context.perform
-                {
-                    var error: Error? = nil
-                    
-                    do
+                return await withCheckedContinuation
+                { continuation in
+                
+                    nonisolated(unsafe) let safeBlock = block
+                
+                    context.perform
                     {
-                        try block(context)
+                        var error: Error? = nil
+                        
+                        do
+                        {
+                            try safeBlock(context)
+                        }
+                        catch let err
+                        {
+                            error = makeError(.coreDataError, underlyingError: err)
+                        }
+                        
+                        continuation.resume(returning: error)
                     }
-                    catch let err
-                    {
-                        error = self.makeError(.coreDataError, underlyingError: err)
-                    }
-                    
-                    completion(error)
                 }
         }
     }
+}
+
+fileprivate func makeError(_ code: UUCoreDataErrorCode, underlyingError: Error? = nil) -> Error
+{
+    var userInfo: [String : Any] = [:]
     
-    open func makeError(_ code: UUCoreDataErrorCode, underlyingError: Error? = nil) -> Error
+    if let err = underlyingError
     {
-        var userInfo: [String : Any] = [:]
-        
-        if let err = underlyingError
-        {
-            userInfo[NSUnderlyingErrorKey] = err
-        }
-        
-        userInfo[NSLocalizedDescriptionKey] = code.errorDescription
-        
-        let err = NSError(domain: UUCoreDataErrorDomain, code: code.rawValue, userInfo: userInfo)
-        return err
+        userInfo[NSUnderlyingErrorKey] = err
     }
+    
+    userInfo[NSLocalizedDescriptionKey] = code.errorDescription
+    
+    let err = NSError(domain: UUCoreDataErrorDomain, code: code.rawValue, userInfo: userInfo)
+    return err
 }
 

@@ -107,10 +107,10 @@ public class UUTimerPool
     private var activeTimers: [String:UUTimer] = [:]
     private let activeTimersLock = NSRecursiveLock()
     
-    private static var pools: [String:UUTimerPool] = [:]
+    nonisolated(unsafe) private static var pools: [String:UUTimerPool] = [:]
     private static let poolsLock = NSRecursiveLock()
     
-    public static let shared = UUTimerPool.getPool("UUTimerPool.shared", queue: DispatchQueue.main)
+    nonisolated(unsafe) public static let shared = UUTimerPool.getPool("UUTimerPool.shared", queue: DispatchQueue.main)
     
     public let identifier: String
     public let dispatchQueue: DispatchQueue
