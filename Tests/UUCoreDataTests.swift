@@ -709,8 +709,6 @@ final class UUCoreDataTests: XCTestCase
     }
 }
 
-
-@objc
 class PlayerEntity: NSManagedObject, Identifiable
 {
     @NSManaged public var identifier: UUID
