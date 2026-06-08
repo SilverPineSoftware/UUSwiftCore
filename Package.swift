@@ -20,7 +20,7 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/SilverPineSoftware/UUSwiftTestCore.git",
-            from: "0.0.4"
+            from: "0.0.5"
         )
     ],
     
@@ -28,14 +28,14 @@ let package = Package(
 		.target(
 			name: "UUSwiftCore",
 			dependencies: [],
-			path: "UUSwiftCore",
+			path: "Library",
 			exclude: ["Info.plist"],
             resources: [
                 .copy("PrivacyInfo.xcprivacy")]),
         .testTarget(
             name: "UUSwiftCoreTests",
             dependencies: ["UUSwiftTestCore", "UUSwiftCore"],
-            path: "Tests",
+            path: "LibraryTests",
             resources: [.process("Resources")]),
 	],
     swiftLanguageModes: [
