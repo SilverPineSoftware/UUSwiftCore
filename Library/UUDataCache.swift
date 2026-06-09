@@ -16,23 +16,21 @@ fileprivate let LOG_TAG : String = "UUDataCache"
 // along with a meta data dictionary about each blob of data.
 public protocol UUDataCacheProtocol
 {
-    func data(for key: String) -> Data?
-    func set(data: Data, for key: String)
+    func data(for key: String) async -> Data?
+    func set(data: Data, for key: String) async
     
-    func metaData(for key: String) -> [String:Any]
-    func set(metaData: [String:Any], for key: String)
+    func metaData(for key: String) async -> [String:Any]
+    func set(metaData: [String:Any], for key: String) async
     
-    func dataExists(for key: String) -> Bool
-    func isDataExpired(for key: String) -> Bool
+    func dataExists(for key: String) async -> Bool
+    func isDataExpired(for key: String) async -> Bool
     
-    func removeData(for key: String)
+    func removeData(for key: String) async
     
-    func clearCache()
-    func purgeExpiredData()
+    func clearCache() async
+    func purgeExpiredData() async
     
-    var dataExpirationInterval : TimeInterval { get set }
-    
-    func listKeys() -> [String]
+    func listKeys() async -> [String]
 }
 
 // Default implementation of UUDataCacheProtocol.  Data objects are persisted
@@ -70,7 +68,7 @@ public class UUDataCache : NSObject, UUDataCacheProtocol
     // Initialization
     ////////////////////////////////////////////////////////////////////////////
     required public init(cacheLocation : String = UUDataCache.defaultCacheFolder(),
-                         contentExpiration: TimeInterval = Constants.defaultContentExpirationLength)
+                       contentExpiration: TimeInterval = Constants.defaultContentExpirationLength)
     {
         super.init()
         
@@ -82,26 +80,27 @@ public class UUDataCache : NSObject, UUDataCacheProtocol
     ////////////////////////////////////////////////////////////////////////////
     // UUDataCacheProtocol Implementation
     ////////////////////////////////////////////////////////////////////////////
-    public func data(for key: String) -> Data?
+    public func data(for key: String) async -> Data?
     {
-        removeIfExpired(for: key)
+        await removeIfExpired(for: key)
         
-        let cached = loadFromDisk(for: key)
+        let cached = await loadFromDisk(for: key)
         return cached
     }
     
-    public func set(data: Data, for key: String)
+    public func set(data: Data, for key: String) async
     {
-        saveToDisk(data: data, for: key)
+        await saveToDisk(data: data, for: key)
         
-        var md = metaData(for: key)
+        var md = await metaData(for: key)
         md[MetaDataKeys.timestamp] = Date()
-        set(metaData: md, for: key)
+        await set(metaData: md, for: key)
     }
     
-    public func moveIntoCache(localData: URL, for key: String)
+    public func moveIntoCache(localData: URL, for key: String) async
     {
-        guard let pathUrl = diskCacheURL(for: key) else {
+        guard let pathUrl = diskCacheURL(for: key) else
+        {
             return
         }
         
@@ -110,9 +109,9 @@ public class UUDataCache : NSObject, UUDataCacheProtocol
             let fm = FileManager.default
             try fm.moveItem(at: localData, to: pathUrl)
             
-            var md = metaData(for: key)
+            var md = await metaData(for: key)
             md[MetaDataKeys.timestamp] = Date()
-            set(metaData: md, for: key)
+            await set(metaData: md, for: key)
         }
         catch (let err)
         {
@@ -120,24 +119,24 @@ public class UUDataCache : NSObject, UUDataCacheProtocol
         }
     }
     
-    public func metaData(for key: String) -> [String:Any]
+    public func metaData(for key: String) async -> [String:Any]
     {
         return UUDataCacheDb.shared.metaData(for: key)
     }
     
-    public func set(metaData: [String:Any], for key: String)
+    public func set(metaData: [String:Any], for key: String) async
     {
         UUDataCacheDb.shared.setMetaData(metaData, for: key)
     }
     
-    public func dataExists(for key: String) -> Bool
+    public func dataExists(for key: String) async -> Bool
     {
-        return dataExistsOnDisk(key: key)
+        return await dataExistsOnDisk(key: key)
     }
     
-    public func isDataExpired(for key: String) -> Bool
+    public func isDataExpired(for key: String) async -> Bool
     {
-        let md = metaData(for: key)
+        let md = await metaData(for: key)
         let timestamp = md[MetaDataKeys.timestamp] as? Date
         if (timestamp != nil)
         {
@@ -148,13 +147,13 @@ public class UUDataCache : NSObject, UUDataCacheProtocol
         return false
     }
     
-    public func removeData(for key: String)
+    public func removeData(for key: String) async
     {
         UUDataCacheDb.shared.clearMetaData(for: key)
-        removeFile(for: key)
+        await removeFile(for: key)
     }
     
-    public func clearCache()
+    public func clearCache() async
     {
         let fm = FileManager.default
         
@@ -172,17 +171,17 @@ public class UUDataCache : NSObject, UUDataCacheProtocol
         UUDataCacheDb.shared.clearAllMetaData()
     }
     
-    public func purgeExpiredData()
+    public func purgeExpiredData() async
     {
         let keys = UUDataCacheDb.shared.logicalKeys()
         
         for key in keys
         {
-            removeIfExpired(for: key)
+            await removeIfExpired(for: key)
         }
     }
     
-    public func listKeys() -> [String]
+    public func listKeys() async -> [String]
     {
         var contents : [String] = []
         
@@ -249,15 +248,15 @@ public class UUDataCache : NSObject, UUDataCacheProtocol
         return nil
     }
     
-    private func removeIfExpired(for key: String)
+    private func removeIfExpired(for key: String) async
     {
-        if (isDataExpired(for: key))
+        if (await isDataExpired(for: key))
         {
-            removeData(for: key)
+            await removeData(for: key)
         }
     }
     
-    private func loadFromDisk(for key: String) -> Data?
+    private func loadFromDisk(for key: String) async -> Data?
     {
         var data : Data? = nil
         
@@ -278,7 +277,7 @@ public class UUDataCache : NSObject, UUDataCacheProtocol
         return data
     }
         
-    private func removeFile(for key: String)
+    private func removeFile(for key: String) async
     {
         guard let pathUrl = diskCacheURL(for: key) else
         {
@@ -295,7 +294,7 @@ public class UUDataCache : NSObject, UUDataCacheProtocol
         }
     }
     
-    private func saveToDisk(data: Data, for key: String)
+    private func saveToDisk(data: Data, for key: String) async
     {
         guard let pathUrl = diskCacheURL(for: key) else
         {
@@ -311,8 +310,8 @@ public class UUDataCache : NSObject, UUDataCacheProtocol
             UULog.error(tag: LOG_TAG, message: "Error saving data: \(String(describing: err))")
         }
     }
-        
-    private func dataExistsOnDisk(key: String) -> Bool
+       
+    private func dataExistsOnDisk(key: String) async -> Bool
     {
         guard let pathUrl = diskCacheURL(for: key) else
         {

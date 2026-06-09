@@ -13,144 +13,153 @@ final class UUDataCacheTests: XCTestCase
     private var cacheDirectory: String = ""
     private var cache: UUDataCache!
 
-    override func setUp()
+    override func setUp() async throws
     {
-        super.setUp()
+        try await super.setUp()
         cacheDirectory = (NSTemporaryDirectory() as NSString)
             .appendingPathComponent("UUDataCacheTests-\(UUID().uuidString)")
         cache = UUDataCache(cacheLocation: cacheDirectory, contentExpiration: 3600)
     }
 
-    override func tearDown()
+    override func tearDown() async throws
     {
-        cache?.clearCache()
+        if let cache
+        {
+            await cache.clearCache()
+        }
+
         if !cacheDirectory.isEmpty
         {
             try? FileManager.default.removeItem(atPath: cacheDirectory)
         }
+
         cache = nil
-        super.tearDown()
+        try await super.tearDown()
     }
 
     // MARK: - data(for:)
 
-    func test_data_returnsNilForMissingKey()
+    func test_data_returnsNilForMissingKey() async
     {
-        let result = cache.data(for: uniqueKey("missing"))
+        let result = await cache.data(for: uniqueKey("missing"))
         XCTAssertNil(result)
     }
 
-    func test_setAndGetData_roundTripsPayload()
+    func test_setAndGetData_roundTripsPayload() async
     {
         let key = uniqueKey("round-trip")
         let payload = Data((0..<512).map { UInt8($0 % 256) })
 
-        cache.set(data: payload, for: key)
-        let loaded = cache.data(for: key)
+        await cache.set(data: payload, for: key)
+        let loaded = await cache.data(for: key)
 
         XCTAssertEqual(loaded, payload)
     }
 
-    func test_setData_overwritesExistingValue()
+    func test_setData_overwritesExistingValue() async
     {
         let key = uniqueKey("overwrite")
         let original = Data("original".utf8)
         let updated = Data("updated-bytes".utf8)
 
-        cache.set(data: original, for: key)
-        cache.set(data: updated, for: key)
+        await cache.set(data: original, for: key)
+        await cache.set(data: updated, for: key)
 
-        let actual = cache.data(for: key)
+        let actual = await cache.data(for: key)
         XCTAssertEqual(actual, updated)
     }
 
-    func test_multipleKeys_storeIndependently()
+    func test_multipleKeys_storeIndependently() async
     {
         let keyA = uniqueKey("a")
         let keyB = uniqueKey("b")
         let dataA = Data("alpha".utf8)
         let dataB = Data("beta".utf8)
 
-        cache.set(data: dataA, for: keyA)
-        cache.set(data: dataB, for: keyB)
+        await cache.set(data: dataA, for: keyA)
+        await cache.set(data: dataB, for: keyB)
 
-        let loadedA = cache.data(for: keyA)
-        let loadedB = cache.data(for: keyB)
+        let loadedA = await cache.data(for: keyA)
+        let loadedB = await cache.data(for: keyB)
         XCTAssertEqual(loadedA, dataA)
         XCTAssertEqual(loadedB, dataB)
     }
 
-    func test_data_supportsUnsafeUrlLikeKey()
+    func test_data_supportsUnsafeUrlLikeKey() async
     {
         let key = uniqueKey("http://example.com/image.png?size=large&format=png")
         let payload = Data([0x01, 0x02, 0x03])
 
-        cache.set(data: payload, for: key)
+        await cache.set(data: payload, for: key)
 
-        XCTAssertTrue(cache.dataExists(for: key))
-        
-        let actual = cache.data(for: key)
+        let exists = await cache.dataExists(for: key)
+        let actual = await cache.data(for: key)
+        XCTAssertTrue(exists)
         XCTAssertEqual(actual, payload)
     }
 
     // MARK: - dataExists(for:)
 
-    func test_dataExists_isFalseForMissingKey()
+    func test_dataExists_isFalseForMissingKey() async
     {
-        XCTAssertFalse(cache.dataExists(for: uniqueKey("absent")))
+        let exists = await cache.dataExists(for: uniqueKey("absent"))
+        XCTAssertFalse(exists)
     }
 
-    func test_dataExists_isTrueAfterSet()
+    func test_dataExists_isTrueAfterSet() async
     {
         let key = uniqueKey("exists")
-        cache.set(data: Data("payload".utf8), for: key)
+        await cache.set(data: Data("payload".utf8), for: key)
 
-        XCTAssertTrue(cache.dataExists(for: key))
+        let exists = await cache.dataExists(for: key)
+        XCTAssertTrue(exists)
     }
 
     // MARK: - removeData(for:)
 
-    func test_removeData_removesStoredBytes()
+    func test_removeData_removesStoredBytes() async
     {
         let key = uniqueKey("remove")
-        cache.set(data: Data("temporary".utf8), for: key)
+        await cache.set(data: Data("temporary".utf8), for: key)
 
-        cache.removeData(for: key)
+        await cache.removeData(for: key)
 
-        XCTAssertFalse(cache.dataExists(for: key))
-        XCTAssertNil(cache.data(for: key))
+        let exists = await cache.dataExists(for: key)
+        let loaded = await cache.data(for: key)
+        XCTAssertFalse(exists)
+        XCTAssertNil(loaded)
     }
 
     // MARK: - metaData
 
-    func test_setData_writesTimestampMetadata()
+    func test_setData_writesTimestampMetadata() async
     {
         let key = uniqueKey("timestamp")
-        cache.set(data: Data("x".utf8), for: key)
+        await cache.set(data: Data("x".utf8), for: key)
 
-        let md = cache.metaData(for: key)
+        let md = await cache.metaData(for: key)
 
         XCTAssertNotNil(md[UUDataCache.MetaDataKeys.timestamp] as? Date)
     }
 
-    func test_setMetaData_roundTripsCustomValues()
+    func test_setMetaData_roundTripsCustomValues() async
     {
         let key = uniqueKey("metadata")
-        cache.set(metaData: ["color": "red", "count": 3], for: key)
+        await cache.set(metaData: ["color": "red", "count": 3], for: key)
 
-        let md = cache.metaData(for: key)
+        let md = await cache.metaData(for: key)
 
         XCTAssertEqual(md["color"] as? String, "red")
         XCTAssertEqual(md["count"] as? Int, 3)
     }
 
-    func test_setData_preservesExistingCustomMetadata()
+    func test_setData_preservesExistingCustomMetadata() async
     {
         let key = uniqueKey("preserve-metadata")
-        cache.set(metaData: ["tag": "keep-me"], for: key)
-        cache.set(data: Data("payload".utf8), for: key)
+        await cache.set(metaData: ["tag": "keep-me"], for: key)
+        await cache.set(data: Data("payload".utf8), for: key)
 
-        let md = cache.metaData(for: key)
+        let md = await cache.metaData(for: key)
 
         XCTAssertEqual(md["tag"] as? String, "keep-me")
         XCTAssertNotNil(md[UUDataCache.MetaDataKeys.timestamp] as? Date)
@@ -158,45 +167,47 @@ final class UUDataCacheTests: XCTestCase
 
     // MARK: - expiration
 
-    func test_isDataExpired_isFalseForFreshData()
+    func test_isDataExpired_isFalseForFreshData() async
     {
         let key = uniqueKey("fresh")
         cache.contentExpirationLength = 3600
-        cache.set(data: Data("fresh".utf8), for: key)
+        await cache.set(data: Data("fresh".utf8), for: key)
 
-        XCTAssertFalse(cache.isDataExpired(for: key))
+        let isExpired = await cache.isDataExpired(for: key)
+        XCTAssertFalse(isExpired)
     }
 
-    func test_isDataExpired_isTrueWhenTimestampIsOld()
+    func test_isDataExpired_isTrueWhenTimestampIsOld() async
     {
         let key = uniqueKey("expired")
         cache.contentExpirationLength = 60
-        cache.set(data: Data("stale".utf8), for: key)
+        await cache.set(data: Data("stale".utf8), for: key)
 
-        var md = cache.metaData(for: key)
+        var md = await cache.metaData(for: key)
         md[UUDataCache.MetaDataKeys.timestamp] = Date(timeIntervalSince1970: 0)
-        cache.set(metaData: md, for: key)
+        await cache.set(metaData: md, for: key)
 
-        XCTAssertTrue(cache.isDataExpired(for: key))
+        let isExpired = await cache.isDataExpired(for: key)
+        XCTAssertTrue(isExpired)
     }
 
-    func test_data_removesExpiredEntryOnRead()
+    func test_data_removesExpiredEntryOnRead() async
     {
         let key = uniqueKey("auto-purge-on-read")
         cache.contentExpirationLength = 60
-        cache.set(data: Data("old".utf8), for: key)
+        await cache.set(data: Data("old".utf8), for: key)
 
-        var md = cache.metaData(for: key)
+        var md = await cache.metaData(for: key)
         md[UUDataCache.MetaDataKeys.timestamp] = Date(timeIntervalSince1970: 0)
-        cache.set(metaData: md, for: key)
+        await cache.set(metaData: md, for: key)
 
-        let loaded = cache.data(for: key)
-        let exists = cache.dataExists(for: key)
+        let loaded = await cache.data(for: key)
+        let exists = await cache.dataExists(for: key)
         XCTAssertNil(loaded)
         XCTAssertFalse(exists)
     }
 
-    func test_dataExpirationInterval_aliasesContentExpirationLength()
+    func test_dataExpirationInterval_aliasesContentExpirationLength() async
     {
         cache.dataExpirationInterval = 123
         XCTAssertEqual(cache.contentExpirationLength, 123)
@@ -205,60 +216,62 @@ final class UUDataCacheTests: XCTestCase
         XCTAssertEqual(cache.dataExpirationInterval, 456)
     }
 
-    func test_purgeExpiredData_removesOnlyExpiredEntries()
+    func test_purgeExpiredData_removesOnlyExpiredEntries() async
     {
         cache.contentExpirationLength = 60
 
         let freshKey = uniqueKey("fresh-purge")
         let expiredKey = uniqueKey("expired-purge")
-        cache.set(data: Data("fresh".utf8), for: freshKey)
-        cache.set(data: Data("expired".utf8), for: expiredKey)
+        await cache.set(data: Data("fresh".utf8), for: freshKey)
+        await cache.set(data: Data("expired".utf8), for: expiredKey)
 
-        var expiredMd = cache.metaData(for: expiredKey)
+        var expiredMd = await cache.metaData(for: expiredKey)
         expiredMd[UUDataCache.MetaDataKeys.timestamp] = Date(timeIntervalSince1970: 0)
-        cache.set(metaData: expiredMd, for: expiredKey)
+        await cache.set(metaData: expiredMd, for: expiredKey)
 
-        cache.purgeExpiredData()
+        await cache.purgeExpiredData()
 
-        XCTAssertTrue(cache.dataExists(for: freshKey))
-        XCTAssertFalse(cache.dataExists(for: expiredKey))
+        let freshExists = await cache.dataExists(for: freshKey)
+        let expiredExists = await cache.dataExists(for: expiredKey)
+        XCTAssertTrue(freshExists)
+        XCTAssertFalse(expiredExists)
     }
 
     // MARK: - listKeys / clearCache
 
-    func test_listKeys_returnsDiskFileNamesAfterWrite()
+    func test_listKeys_returnsDiskFileNamesAfterWrite() async
     {
         let key = uniqueKey("listed")
-        cache.set(data: Data("listed".utf8), for: key)
+        await cache.set(data: Data("listed".utf8), for: key)
 
-        let keys = cache.listKeys()
+        let keys = await cache.listKeys()
 
         XCTAssertEqual(keys.count, 1)
         XCTAssertFalse(keys[0].isEmpty)
     }
 
-    func test_clearCache_removesAllStoredFiles()
+    func test_clearCache_removesAllStoredFiles() async
     {
         for index in 0..<5
         {
-            cache.set(data: Data("item-\(index)".utf8), for: uniqueKey("bulk-\(index)"))
+            await cache.set(data: Data("item-\(index)".utf8), for: uniqueKey("bulk-\(index)"))
         }
 
-        let keysBeforeClear = cache.listKeys()
+        let keysBeforeClear = await cache.listKeys()
         XCTAssertEqual(keysBeforeClear.count, 5)
 
-        cache.clearCache()
+        await cache.clearCache()
 
-        let keysAfterClear = cache.listKeys()
+        let keysAfterClear = await cache.listKeys()
         XCTAssertEqual(keysAfterClear.count, 0)
     }
 
     // MARK: - diskCacheURL / moveIntoCache
 
-    func test_diskCacheURL_pointsInsideCacheFolder()
+    func test_diskCacheURL_pointsInsideCacheFolder() async
     {
         let key = uniqueKey("disk-url")
-        cache.set(data: Data("x".utf8), for: key)
+        await cache.set(data: Data("x".utf8), for: key)
 
         guard let url = cache.diskCacheURL(for: key) else
         {
@@ -270,7 +283,7 @@ final class UUDataCacheTests: XCTestCase
         XCTAssertTrue(FileManager.default.fileExists(atPath: url.path))
     }
 
-    func test_moveIntoCache_movesLocalFileIntoCache() throws
+    func test_moveIntoCache_movesLocalFileIntoCache() async throws
     {
         let key = uniqueKey("move-in")
         let payload = Data("moved-bytes".utf8)
@@ -278,19 +291,19 @@ final class UUDataCacheTests: XCTestCase
             .appendingPathComponent("source-\(UUID().uuidString).dat")
         try payload.write(to: sourceURL)
 
-        cache.moveIntoCache(localData: sourceURL, for: key)
+        await cache.moveIntoCache(localData: sourceURL, for: key)
 
         XCTAssertFalse(FileManager.default.fileExists(atPath: sourceURL.path))
 
-        let loaded = cache.data(for: key)
-        let exists = cache.dataExists(for: key)
+        let loaded = await cache.data(for: key)
+        let exists = await cache.dataExists(for: key)
         XCTAssertEqual(loaded, payload)
         XCTAssertTrue(exists)
     }
 
     // MARK: - defaultCacheFolder
 
-    func test_defaultCacheFolder_returnsNonEmptyPath()
+    func test_defaultCacheFolder_returnsNonEmptyPath() async
     {
         let path = UUDataCache.defaultCacheFolder()
 
