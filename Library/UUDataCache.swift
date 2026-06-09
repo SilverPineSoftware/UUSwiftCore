@@ -174,7 +174,7 @@ public class UUDataCache : NSObject, UUDataCacheProtocol
     
     public func purgeExpiredData()
     {
-        let keys : [String] = listKeys()
+        let keys = UUDataCacheDb.shared.logicalKeys()
         
         for key in keys
         {
@@ -239,7 +239,8 @@ public class UUDataCache : NSObject, UUDataCacheProtocol
     
     public func diskCacheURL(for key: String) -> URL?
     {
-        if let fileName = UUDataCacheDb.shared.fileName(for: key) {
+        if let fileName = UUDataCacheDb.shared.fileName(for: key)
+        {
             let path = (cacheFolder as NSString).appendingPathComponent(fileName)
             let pathUrl = URL(fileURLWithPath: path)
             return pathUrl
@@ -260,7 +261,8 @@ public class UUDataCache : NSObject, UUDataCacheProtocol
     {
         var data : Data? = nil
         
-        guard let pathUrl = diskCacheURL(for: key) else {
+        guard let pathUrl = diskCacheURL(for: key) else
+        {
             return nil
         }
         
@@ -278,7 +280,8 @@ public class UUDataCache : NSObject, UUDataCacheProtocol
         
     private func removeFile(for key: String)
     {
-        guard let pathUrl = diskCacheURL(for: key) else {
+        guard let pathUrl = diskCacheURL(for: key) else
+        {
             return
         }
         
@@ -294,7 +297,8 @@ public class UUDataCache : NSObject, UUDataCacheProtocol
     
     private func saveToDisk(data: Data, for key: String)
     {
-        guard let pathUrl = diskCacheURL(for: key) else {
+        guard let pathUrl = diskCacheURL(for: key) else
+        {
             return
         }
         
@@ -308,8 +312,10 @@ public class UUDataCache : NSObject, UUDataCacheProtocol
         }
     }
         
-    private func dataExistsOnDisk(key: String) -> Bool {
-        guard let pathUrl = diskCacheURL(for: key) else {
+    private func dataExistsOnDisk(key: String) -> Bool
+    {
+        guard let pathUrl = diskCacheURL(for: key) else
+        {
             return false
         }
         
@@ -327,10 +333,13 @@ private class UUDataCacheDb
     let mutex = NSRecursiveLock()
 	var metaData : [String : Any] = [:]
 	
-	init() {
-		if let data = UserDefaults.standard.object(forKey: UUDataCacheDb.cacheKeyName) as? [String : Any] {
+	init()
+    {
+		if let data = UserDefaults.standard.object(forKey: UUDataCacheDb.cacheKeyName) as? [String : Any]
+        {
             mutex.lock()
-            defer {
+            defer
+            {
                 mutex.unlock()
             }
 
@@ -341,21 +350,24 @@ private class UUDataCacheDb
     public func metaData(for key: String) -> [String:Any]
     {
         mutex.lock()
-        defer {
+        defer
+        {
             mutex.unlock()
         }
 
-        if let dictionary = self.metaData[key] as? [String:Any] {
+        if let dictionary = self.metaData[key] as? [String:Any]
+        {
             let copy = dictionary
             return copy
         }
-        else {
-            var metaData : [String : Any] = [:]
-            metaData["fileName"] = UUID().uuidString
-            metaData["timestamp"] = Date()
-            self.metaData[key] = metaData
-                
-            let copy = self.metaData
+        else
+        {
+            var md : [String : Any] = [:]
+            md["fileName"] = UUID().uuidString
+            md["timestamp"] = Date()
+            self.metaData[key] = md
+
+            let copy = md
             return copy
         }
         
@@ -364,7 +376,8 @@ private class UUDataCacheDb
     public func fileName(for key: String) -> String?
     {
         mutex.lock()
-        defer {
+        defer
+        {
             mutex.unlock()
         }
 
@@ -375,11 +388,11 @@ private class UUDataCacheDb
     public func setMetaData(_ metaData: [String:Any], for key: String)
     {
         mutex.lock()
-        defer {
+        defer
+        {
             mutex.unlock()
         }
 
-        
         self.metaData[key] = metaData
         self.saveCurrentMetaData()
     }
@@ -387,7 +400,8 @@ private class UUDataCacheDb
     public func clearMetaData(for key: String)
     {
         mutex.lock()
-        defer {
+        defer
+        {
             mutex.unlock()
         }
 
@@ -398,7 +412,8 @@ private class UUDataCacheDb
     public func clearAllMetaData()
     {
         mutex.lock()
-        defer {
+        defer
+        {
             mutex.unlock()
         }
 
@@ -406,9 +421,22 @@ private class UUDataCacheDb
         self.metaData = [:]
     }
 
-	private func saveCurrentMetaData() {
+    func logicalKeys() -> [String]
+    {
         mutex.lock()
-        defer {
+        defer
+        {
+            mutex.unlock()
+        }
+
+        return Array(metaData.keys)
+    }
+
+	private func saveCurrentMetaData()
+    {
+        mutex.lock()
+        defer
+        {
             mutex.unlock()
         }
 
