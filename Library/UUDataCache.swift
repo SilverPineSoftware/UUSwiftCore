@@ -50,6 +50,7 @@ public class UUDataCache : NSObject, UUDataCacheProtocol
     public struct MetaDataKeys
     {
         public static let timestamp = "timestamp"
+        public static let fileName = "fileName"
     }
     
     ////////////////////////////////////////////////////////////////////////////
@@ -362,8 +363,8 @@ private class UUDataCacheDb
         else
         {
             var md : [String : Any] = [:]
-            md["fileName"] = UUID().uuidString
-            md["timestamp"] = Date()
+            md[UUDataCache.MetaDataKeys.fileName] = UUID().uuidString
+            md[UUDataCache.MetaDataKeys.timestamp] = Date()
             self.metaData[key] = md
 
             let copy = md
@@ -381,7 +382,7 @@ private class UUDataCacheDb
         }
 
         let metaData = self.metaData(for: key)
-        return metaData["fileName"] as? String
+        return metaData[UUDataCache.MetaDataKeys.fileName] as? String
     }
     
     public func setMetaData(_ metaData: [String:Any], for key: String)
