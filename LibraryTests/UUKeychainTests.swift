@@ -111,6 +111,44 @@ final class UUKeychainProtocolTests: XCTestCase
         let result = await mock.readString(key: "name")
         XCTAssertEqual(try? result.get(), "hello")
     }
+
+    func test_mockKeychain_itemsAreVisibleAcrossInstancesWithSameAccessGroup() async
+    {
+        let group = "group.shared"
+        let service = "mock.service.shared"
+        let writer = MockKeychain(serviceIdentifier: service, accessGroup: group)
+        let reader = MockKeychain(serviceIdentifier: service, accessGroup: group)
+
+        let writeError = await writer.write(
+            key: TestKeys.primary,
+            accessLevel: .whenUnlocked,
+            data: Data("shared-secret".utf8))
+        XCTAssertNil(writeError)
+
+        let result = await reader.read(key: TestKeys.primary)
+        XCTAssertEqual(try? result.get(), Data("shared-secret".utf8))
+    }
+
+    func test_mockKeychain_itemsAreIsolatedByAccessGroup() async
+    {
+        let service = "mock.service.isolated"
+        let grouped = MockKeychain(serviceIdentifier: service, accessGroup: "group.a")
+        let otherGroup = MockKeychain(serviceIdentifier: service, accessGroup: "group.b")
+
+        let writeError = await grouped.write(
+            key: TestKeys.primary,
+            accessLevel: .whenUnlocked,
+            data: Data("grouped".utf8))
+        XCTAssertNil(writeError)
+
+        let result = await otherGroup.read(key: TestKeys.primary)
+
+        guard case .failure(.notFound) = result else
+        {
+            XCTFail("Expected .notFound across access groups, got \(result)")
+            return
+        }
+    }
 }
 
 // MARK: - Test support
@@ -121,12 +159,43 @@ private enum TestKeys
     static let secondary = "secondary-key"
 }
 
-private actor MockKeychain: UUKeychainProtocol
+private actor MockKeychainStore
 {
-    let serviceIdentifier = "mock.service"
-    let accessGroup: String? = nil
+    static let shared = MockKeychainStore()
 
     private var storage: [String: Data] = [:]
+
+    func read(key: String) -> Data?
+    {
+        storage[key]
+    }
+
+    func write(key: String, data: Data)
+    {
+        storage[key] = data
+    }
+
+    func clear(key: String)
+    {
+        storage.removeValue(forKey: key)
+    }
+}
+
+private actor MockKeychain: UUKeychainProtocol
+{
+    let serviceIdentifier: String
+    let accessGroup: String?
+
+    init(serviceIdentifier: String = "mock.service", accessGroup: String? = nil)
+    {
+        self.serviceIdentifier = serviceIdentifier
+        self.accessGroup = accessGroup
+    }
+
+    private func storageKey(_ key: String) -> String
+    {
+        "\(accessGroup ?? "<default>")|\(serviceIdentifier)|\(key)"
+    }
 
     func read(key: String) async -> Result<Data, UUKeychainError>
     {
@@ -135,7 +204,7 @@ private actor MockKeychain: UUKeychainProtocol
             return .failure(.invalidKey)
         }
 
-        guard let data = storage[key] else
+        guard let data = await MockKeychainStore.shared.read(key: storageKey(key)) else
         {
             return .failure(.notFound)
         }
@@ -155,7 +224,7 @@ private actor MockKeychain: UUKeychainProtocol
             return .emptyData
         }
 
-        storage[key] = data
+        await MockKeychainStore.shared.write(key: storageKey(key), data: data)
         return nil
     }
 
@@ -166,7 +235,7 @@ private actor MockKeychain: UUKeychainProtocol
             return .invalidKey
         }
 
-        storage.removeValue(forKey: key)
+        await MockKeychainStore.shared.clear(key: storageKey(key))
         return nil
     }
 }

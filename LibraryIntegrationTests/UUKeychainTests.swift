@@ -165,6 +165,63 @@ final class UUKeychainIntegrationTests: XCTestCase
         let clearError = await otherKeychain.clear(key: TestKeys.primary)
         XCTAssertNil(clearError)
     }
+
+    func test_itemsAreVisibleAcrossInstancesWithSameAccessGroup() async throws
+    {
+        guard let accessGroup = KeychainTestSupport.entitledAccessGroup() else
+        {
+            throw XCTSkip("Shared keychain access group entitlement is not configured on the test host.")
+        }
+
+        let writer = UUKeychain(
+            serviceIdentifier: serviceIdentifier,
+            accessGroup: accessGroup)
+        let reader = UUKeychain(
+            serviceIdentifier: serviceIdentifier,
+            accessGroup: accessGroup)
+
+        let writeError = await writer.write(
+            key: TestKeys.primary,
+            accessLevel: .whenUnlocked,
+            data: Data("shared-via-group".utf8))
+        XCTAssertNil(writeError)
+
+        let result = await reader.read(key: TestKeys.primary)
+        XCTAssertEqual(try? result.get(), Data("shared-via-group".utf8))
+
+        let clearError = await reader.clear(key: TestKeys.primary)
+        XCTAssertNil(clearError)
+    }
+
+    func test_itemsAreIsolatedByAccessGroup() async throws
+    {
+        guard let accessGroup = KeychainTestSupport.entitledAccessGroup() else
+        {
+            throw XCTSkip("Shared keychain access group entitlement is not configured on the test host.")
+        }
+
+        let groupedKeychain = UUKeychain(
+            serviceIdentifier: serviceIdentifier,
+            accessGroup: accessGroup)
+        let ungroupedKeychain = UUKeychain(serviceIdentifier: serviceIdentifier)
+
+        let writeError = await groupedKeychain.write(
+            key: TestKeys.primary,
+            accessLevel: .whenUnlocked,
+            data: Data("group-only".utf8))
+        XCTAssertNil(writeError)
+
+        let result = await ungroupedKeychain.read(key: TestKeys.primary)
+
+        guard case .failure(.notFound) = result else
+        {
+            XCTFail("Expected ungrouped keychain to miss grouped item, got \(result)")
+            return
+        }
+
+        let clearError = await groupedKeychain.clear(key: TestKeys.primary)
+        XCTAssertNil(clearError)
+    }
 }
 
 // MARK: - Test support
