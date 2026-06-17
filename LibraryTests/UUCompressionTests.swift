@@ -130,7 +130,8 @@ final class UUCompressionTests: XCTestCase
 
     private func doParseCentralDirectory(named resourceName: String, expectedFileNames: [String])
     {
-        guard let zipURL = Bundle.module.url(forResource: resourceName, withExtension: "zip") else
+        let bundle = Bundle(for: Self.self)
+        guard let zipURL = bundle.url(forResource: resourceName, withExtension: "zip") else
         {
             XCTFail("\(resourceName).zip not found in test bundle")
             return
@@ -163,7 +164,8 @@ final class UUCompressionTests: XCTestCase
 
     private func doUnzipFile(_ named: String)
     {
-        guard let zipURL = Bundle.module.url(forResource: named, withExtension: "zip") else
+        let bundle = Bundle(for: Self.self)
+        guard let zipURL = bundle.url(forResource: named, withExtension: "zip") else
         {
             XCTFail("\(named).zip not found in test bundle")
             return
@@ -414,7 +416,8 @@ final class UUCompressionTests: XCTestCase
     
     func readGZippedJsonFile(_ fileName: String) -> Data?
     {
-        guard let fileUrl = Bundle.module.url(forResource: fileName, withExtension: "json.gz") else
+        let bundle = Bundle(for: Self.self)
+        guard let fileUrl = bundle.url(forResource: fileName, withExtension: "json.gz") else
         {
             NSLog("Unable to load file from bundle")
             return nil
@@ -439,7 +442,8 @@ final class UUCompressionTests: XCTestCase
     
     func readBundleFile(fileName: String, fileExtension: String) -> Data?
     {
-        guard let fileUrl = Bundle.module.url(forResource: fileName, withExtension: fileExtension) else
+        let bundle = Bundle(for: Self.self)
+        guard let fileUrl = bundle.url(forResource: fileName, withExtension: fileExtension) else
         {
             NSLog("Unable to load file from bundle")
             return nil

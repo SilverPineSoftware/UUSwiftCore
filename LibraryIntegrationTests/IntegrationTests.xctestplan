@@ -1,0 +1,24 @@
+{
+  "configurations" : [
+    {
+      "id" : "0C05B32F-8A94-425F-929E-8F0479E3A31A",
+      "name" : "Configuration 1",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:UUSwiftCore.xcodeproj",
+        "identifier" : "08A9B0D22FE2C8FC004423B9",
+        "name" : "LibraryIntegrationTests"
+      }
+    }
+  ],
+  "version" : 1
+}

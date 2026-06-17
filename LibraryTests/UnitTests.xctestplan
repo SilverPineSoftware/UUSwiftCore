@@ -1,0 +1,25 @@
+{
+  "configurations" : [
+    {
+      "id" : "08E9F435-A516-4D72-B01A-D360FB7FC008",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false,
+    "performanceAntipatternCheckerEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:UUSwiftCore.xcodeproj",
+        "identifier" : "08A9B08A2FE2737A004423B9",
+        "name" : "LibraryTests"
+      }
+    }
+  ],
+  "version" : 1
+}
