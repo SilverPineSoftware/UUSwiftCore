@@ -79,6 +79,74 @@ final class UUKeychainConnectedTests: XCTestCase
         XCTAssertEqual(try? result.get(), updated)
     }
 
+    func test_writeString_overwritesExistingValue() async
+    {
+        let firstWriteError = await keychain.writeString(
+            key: TestKeys.primary,
+            accessLevel: .whenUnlocked,
+            string: "first-value")
+        XCTAssertNil(firstWriteError)
+
+        let secondWriteError = await keychain.writeString(
+            key: TestKeys.primary,
+            accessLevel: .afterFirstUnlock,
+            string: "second-value")
+        XCTAssertNil(secondWriteError)
+
+        let result = await keychain.readString(key: TestKeys.primary)
+        XCTAssertEqual(try? result.get(), "second-value")
+    }
+
+    func test_write_eachAccessLevel_roundTripsValue() async
+    {
+        let payload = Data("access-level-payload".utf8)
+        let levels: [UUKeychainAccessLevel] = [
+            .whenUnlocked,
+            .afterFirstUnlock,
+            .whenPasscodeSetThisDeviceOnly,
+            .whenUnlockedThisDeviceOnly,
+            .afterFirstUnlockThisDeviceOnly,
+        ]
+
+        for level in levels
+        {
+            let key = "access-level-\(level)"
+
+            let writeError = await keychain.write(
+                key: key,
+                accessLevel: level,
+                data: payload)
+
+            if level == .whenPasscodeSetThisDeviceOnly, writeError != nil
+            {
+                continue
+            }
+
+            XCTAssertNil(writeError, "Write failed for \(level): \(String(describing: writeError))")
+
+            let result = await keychain.read(key: key)
+            XCTAssertEqual(try? result.get(), payload, "Read failed for \(level)")
+
+            let updateError = await keychain.write(
+                key: key,
+                accessLevel: level,
+                data: Data("updated-\(level)".utf8))
+
+            if level == .whenPasscodeSetThisDeviceOnly, updateError != nil
+            {
+                continue
+            }
+
+            XCTAssertNil(updateError, "Update failed for \(level): \(String(describing: updateError))")
+
+            let updated = await keychain.read(key: key)
+            XCTAssertEqual(try? updated.get(), Data("updated-\(level)".utf8), "Updated read failed for \(level)")
+
+            let clearError = await keychain.clear(key: key)
+            XCTAssertNil(clearError)
+        }
+    }
+
     func test_multipleKeys_storeIndependently() async
     {
         let dataA = Data("alpha".utf8)
@@ -142,6 +210,57 @@ final class UUKeychainConnectedTests: XCTestCase
         let result = await keychain.readString(key: TestKeys.primary)
 
         XCTAssertEqual(try? result.get(), value)
+    }
+
+    func test_readString_returnsUnexpectedDataForInvalidUTF8() async
+    {
+        let writeError = await keychain.write(
+            key: TestKeys.primary,
+            accessLevel: .whenUnlocked,
+            data: Data([0xFF, 0xFE, 0xFD]))
+        XCTAssertNil(writeError)
+
+        let result = await keychain.readString(key: TestKeys.primary)
+
+        guard case .failure(.unexpectedData) = result else
+        {
+            XCTFail("Expected .unexpectedData, got \(result)")
+            return
+        }
+    }
+
+    func test_readString_returnsNotFoundAfterClear() async
+    {
+        let writeError = await keychain.writeString(
+            key: TestKeys.primary,
+            accessLevel: .whenUnlocked,
+            string: "temporary")
+        XCTAssertNil(writeError)
+
+        let clearError = await keychain.clear(key: TestKeys.primary)
+        XCTAssertNil(clearError)
+
+        let result = await keychain.readString(key: TestKeys.primary)
+
+        guard case .failure(.notFound) = result else
+        {
+            XCTFail("Expected .notFound after clear, got \(result)")
+            return
+        }
+    }
+
+    func test_write_returnsMissingEntitlementForUnentitledAccessGroup() async
+    {
+        let unentitledKeychain = UUKeychain(
+            serviceIdentifier: serviceIdentifier,
+            accessGroup: "com.silverpine.uu.not.entitled.\(UUID().uuidString)")
+
+        let error = await unentitledKeychain.write(
+            key: TestKeys.primary,
+            accessLevel: .whenUnlocked,
+            data: Data("secret".utf8))
+
+        XCTAssertEqual(error, .missingEntitlement)
     }
 
     func test_itemsAreScopedByServiceIdentifier() async
