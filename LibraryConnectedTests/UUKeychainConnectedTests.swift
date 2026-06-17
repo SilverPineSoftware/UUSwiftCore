@@ -195,31 +195,37 @@ final class UUKeychainConnectedTests: XCTestCase
 
     func test_itemsAreIsolatedByAccessGroup() async throws
     {
-        guard let accessGroup = KeychainTestSupport.entitledAccessGroup() else
+        guard let sharedAccessGroup = KeychainTestSupport.entitledAccessGroup(),
+              let defaultAccessGroup = KeychainTestSupport.defaultAccessGroup()
+        else
         {
             throw XCTSkip("Shared keychain access group entitlement is not configured on the test host.")
         }
 
-        let groupedKeychain = UUKeychain(
-            serviceIdentifier: serviceIdentifier,
-            accessGroup: accessGroup)
-        let ungroupedKeychain = UUKeychain(serviceIdentifier: serviceIdentifier)
+        XCTAssertNotEqual(sharedAccessGroup, defaultAccessGroup)
 
-        let writeError = await groupedKeychain.write(
+        let sharedKeychain = UUKeychain(
+            serviceIdentifier: serviceIdentifier,
+            accessGroup: sharedAccessGroup)
+        let defaultKeychain = UUKeychain(
+            serviceIdentifier: serviceIdentifier,
+            accessGroup: defaultAccessGroup)
+
+        let writeError = await sharedKeychain.write(
             key: TestKeys.primary,
             accessLevel: .whenUnlocked,
             data: Data("group-only".utf8))
         XCTAssertNil(writeError)
 
-        let result = await ungroupedKeychain.read(key: TestKeys.primary)
+        let result = await defaultKeychain.read(key: TestKeys.primary)
 
         guard case .failure(.notFound) = result else
         {
-            XCTFail("Expected ungrouped keychain to miss grouped item, got \(result)")
+            XCTFail("Expected default access group to miss shared-group item, got \(result)")
             return
         }
 
-        let clearError = await groupedKeychain.clear(key: TestKeys.primary)
+        let clearError = await sharedKeychain.clear(key: TestKeys.primary)
         XCTAssertNil(clearError)
     }
 }
