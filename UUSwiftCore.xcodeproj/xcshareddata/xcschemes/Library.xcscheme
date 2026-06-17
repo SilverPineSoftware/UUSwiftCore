@@ -30,8 +30,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "08A9B0BA2FE2739C004423B9"
-               BuildableName = "LibraryIntegrationTestHost.app"
-               BlueprintName = "LibraryIntegrationTestHost"
+               BuildableName = "LibraryConnectedTestHost.app"
+               BlueprintName = "LibraryConnectedTestHost"
                ReferencedContainer = "container:UUSwiftCore.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -48,7 +48,7 @@
             default = "YES">
          </TestPlanReference>
          <TestPlanReference
-            reference = "container:LibraryIntegrationTests/IntegrationTests.xctestplan">
+            reference = "container:LibraryConnectedTests/ConnectedTests.xctestplan">
          </TestPlanReference>
       </TestPlans>
    </TestAction>

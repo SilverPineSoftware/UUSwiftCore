@@ -1,5 +1,5 @@
 //
-//  UUKeychainTests.swift
+//  UUKeychainConnectedTests.swift
 //  UUSwiftCore
 //
 //  Created by Ryan DeVore on 6/16/26.
@@ -12,7 +12,7 @@ import XCTest
 
 // MARK: - Keychain integration (requires test host on iOS)
 
-final class UUKeychainIntegrationTests: XCTestCase
+final class UUKeychainConnectedTests: XCTestCase
 {
     private var serviceIdentifier: String!
     private var keychain: UUKeychain!

@@ -70,8 +70,8 @@
 
 /* Begin PBXFileReference section */
 		08A9B08B2FE2737A004423B9 /* LibraryTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LibraryTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		08A9B0BB2FE2739C004423B9 /* LibraryIntegrationTestHost.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LibraryIntegrationTestHost.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		08A9B0D32FE2C8FC004423B9 /* LibraryIntegrationTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LibraryIntegrationTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		08A9B0BB2FE2739C004423B9 /* LibraryConnectedTestHost.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LibraryConnectedTestHost.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		08A9B0D32FE2C8FC004423B9 /* LibraryConnectedTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LibraryConnectedTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C5361B0F26BA20E200EDA4AB /* UUSwiftCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = UUSwiftCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C5361B4526BA218F00EDA4AB /* Package.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		C5361B4626BA218F00EDA4AB /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
@@ -91,8 +91,8 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		08A9B0632FE27356004423B9 /* Library */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (08A9B0C92FE2741B004423B9 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Library; sourceTree = "<group>"; };
 		08A9B08C2FE2737A004423B9 /* LibraryTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = LibraryTests; sourceTree = "<group>"; };
-		08A9B0BC2FE2739C004423B9 /* LibraryIntegrationTestHost */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = LibraryIntegrationTestHost; sourceTree = "<group>"; };
-		08A9B0D42FE2C8FC004423B9 /* LibraryIntegrationTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = LibraryIntegrationTests; sourceTree = "<group>"; };
+		08A9B0BC2FE2739C004423B9 /* LibraryConnectedTestHost */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = LibraryConnectedTestHost; sourceTree = "<group>"; };
+		08A9B0D42FE2C8FC004423B9 /* LibraryConnectedTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = LibraryConnectedTests; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -148,8 +148,8 @@
 				C5361B4626BA218F00EDA4AB /* README.md */,
 				08A9B0632FE27356004423B9 /* Library */,
 				08A9B08C2FE2737A004423B9 /* LibraryTests */,
-				08A9B0BC2FE2739C004423B9 /* LibraryIntegrationTestHost */,
-				08A9B0D42FE2C8FC004423B9 /* LibraryIntegrationTests */,
+				08A9B0BC2FE2739C004423B9 /* LibraryConnectedTestHost */,
+				08A9B0D42FE2C8FC004423B9 /* LibraryConnectedTests */,
 				08A9B0E72FE2CB91004423B9 /* Frameworks */,
 				C5361B1026BA20E200EDA4AB /* Products */,
 			);
@@ -160,8 +160,8 @@
 			children = (
 				C5361B0F26BA20E200EDA4AB /* UUSwiftCore.framework */,
 				08A9B08B2FE2737A004423B9 /* LibraryTests.xctest */,
-				08A9B0BB2FE2739C004423B9 /* LibraryIntegrationTestHost.app */,
-				08A9B0D32FE2C8FC004423B9 /* LibraryIntegrationTests.xctest */,
+				08A9B0BB2FE2739C004423B9 /* LibraryConnectedTestHost.app */,
+				08A9B0D32FE2C8FC004423B9 /* LibraryConnectedTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -204,9 +204,9 @@
 			productReference = 08A9B08B2FE2737A004423B9 /* LibraryTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		08A9B0BA2FE2739C004423B9 /* LibraryIntegrationTestHost */ = {
+		08A9B0BA2FE2739C004423B9 /* LibraryConnectedTestHost */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 08A9B0C32FE2739E004423B9 /* Build configuration list for PBXNativeTarget "LibraryIntegrationTestHost" */;
+			buildConfigurationList = 08A9B0C32FE2739E004423B9 /* Build configuration list for PBXNativeTarget "LibraryConnectedTestHost" */;
 			buildPhases = (
 				08A9B0B72FE2739C004423B9 /* Sources */,
 				08A9B0B82FE2739C004423B9 /* Frameworks */,
@@ -219,19 +219,19 @@
 				08A9B1612FE2CDAE004423B9 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				08A9B0BC2FE2739C004423B9 /* LibraryIntegrationTestHost */,
+				08A9B0BC2FE2739C004423B9 /* LibraryConnectedTestHost */,
 			);
-			name = LibraryIntegrationTestHost;
+			name = LibraryConnectedTestHost;
 			packageProductDependencies = (
 				08A9B0CD2FE274ED004423B9 /* UUSwiftTestCoreUX */,
 			);
 			productName = LibraryTestHost;
-			productReference = 08A9B0BB2FE2739C004423B9 /* LibraryIntegrationTestHost.app */;
+			productReference = 08A9B0BB2FE2739C004423B9 /* LibraryConnectedTestHost.app */;
 			productType = "com.apple.product-type.application";
 		};
-		08A9B0D22FE2C8FC004423B9 /* LibraryIntegrationTests */ = {
+		08A9B0D22FE2C8FC004423B9 /* LibraryConnectedTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 08A9B0DA2FE2C8FC004423B9 /* Build configuration list for PBXNativeTarget "LibraryIntegrationTests" */;
+			buildConfigurationList = 08A9B0DA2FE2C8FC004423B9 /* Build configuration list for PBXNativeTarget "LibraryConnectedTests" */;
 			buildPhases = (
 				08A9B0CF2FE2C8FC004423B9 /* Sources */,
 				08A9B0D02FE2C8FC004423B9 /* Frameworks */,
@@ -244,14 +244,14 @@
 				08A9B0DE2FE2C903004423B9 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				08A9B0D42FE2C8FC004423B9 /* LibraryIntegrationTests */,
+				08A9B0D42FE2C8FC004423B9 /* LibraryConnectedTests */,
 			);
-			name = LibraryIntegrationTests;
+			name = LibraryConnectedTests;
 			packageProductDependencies = (
 				08A9B0E82FE2CB91004423B9 /* UUSwiftTestCore */,
 			);
 			productName = LibraryIntegrationTests;
-			productReference = 08A9B0D32FE2C8FC004423B9 /* LibraryIntegrationTests.xctest */;
+			productReference = 08A9B0D32FE2C8FC004423B9 /* LibraryConnectedTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		C5361B0E26BA20E200EDA4AB /* UUSwiftCore */ = {
@@ -319,8 +319,8 @@
 			targets = (
 				C5361B0E26BA20E200EDA4AB /* UUSwiftCore */,
 				08A9B08A2FE2737A004423B9 /* LibraryTests */,
-				08A9B0D22FE2C8FC004423B9 /* LibraryIntegrationTests */,
-				08A9B0BA2FE2739C004423B9 /* LibraryIntegrationTestHost */,
+				08A9B0D22FE2C8FC004423B9 /* LibraryConnectedTests */,
+				08A9B0BA2FE2739C004423B9 /* LibraryConnectedTestHost */,
 			);
 		};
 /* End PBXProject section */
@@ -395,7 +395,7 @@
 		};
 		08A9B0C82FE273DE004423B9 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 08A9B0BA2FE2739C004423B9 /* LibraryIntegrationTestHost */;
+			target = 08A9B0BA2FE2739C004423B9 /* LibraryConnectedTestHost */;
 			targetProxy = 08A9B0C72FE273DE004423B9 /* PBXContainerItemProxy */;
 		};
 		08A9B0D92FE2C8FC004423B9 /* PBXTargetDependency */ = {
@@ -405,7 +405,7 @@
 		};
 		08A9B0DE2FE2C903004423B9 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 08A9B0BA2FE2739C004423B9 /* LibraryIntegrationTestHost */;
+			target = 08A9B0BA2FE2739C004423B9 /* LibraryConnectedTestHost */;
 			targetProxy = 08A9B0DD2FE2C903004423B9 /* PBXContainerItemProxy */;
 		};
 		08A9B1612FE2CDAE004423B9 /* PBXTargetDependency */ = {
@@ -472,7 +472,7 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
-				CODE_SIGN_ENTITLEMENTS = LibraryIntegrationTestHost/LibraryIntegrationTestHost.entitlements;
+				CODE_SIGN_ENTITLEMENTS = LibraryConnectedTestHost/TestHost.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = SVT6H48N2C;
@@ -512,7 +512,7 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
-				CODE_SIGN_ENTITLEMENTS = LibraryIntegrationTestHost/LibraryIntegrationTestHost.entitlements;
+				CODE_SIGN_ENTITLEMENTS = LibraryConnectedTestHost/TestHost.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = SVT6H48N2C;
@@ -567,7 +567,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LibraryIntegrationTestHost.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LibraryIntegrationTestHost";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LibraryConnectedTestHost.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LibraryConnectedTestHost";
 			};
 			name = Debug;
 		};
@@ -593,7 +593,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LibraryIntegrationTestHost.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LibraryIntegrationTestHost";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LibraryConnectedTestHost.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LibraryConnectedTestHost";
 			};
 			name = Release;
 		};
@@ -798,7 +798,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		08A9B0C32FE2739E004423B9 /* Build configuration list for PBXNativeTarget "LibraryIntegrationTestHost" */ = {
+		08A9B0C32FE2739E004423B9 /* Build configuration list for PBXNativeTarget "LibraryConnectedTestHost" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				08A9B0C42FE2739E004423B9 /* Debug */,
@@ -807,7 +807,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		08A9B0DA2FE2C8FC004423B9 /* Build configuration list for PBXNativeTarget "LibraryIntegrationTests" */ = {
+		08A9B0DA2FE2C8FC004423B9 /* Build configuration list for PBXNativeTarget "LibraryConnectedTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				08A9B0DB2FE2C8FC004423B9 /* Debug */,

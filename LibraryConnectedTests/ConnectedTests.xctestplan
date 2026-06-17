@@ -16,7 +16,7 @@
       "target" : {
         "containerPath" : "container:UUSwiftCore.xcodeproj",
         "identifier" : "08A9B0D22FE2C8FC004423B9",
-        "name" : "LibraryIntegrationTests"
+        "name" : "LibraryConnectedTests"
       }
     }
   ],

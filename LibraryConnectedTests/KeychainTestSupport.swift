@@ -13,7 +13,7 @@ enum KeychainTestSupport
 
     private static let infoPlistKey = "UUKeychainTestSharedAccessGroup"
 
-    /// Returns the fully qualified access group published by ``LibraryIntegrationTestHost``.
+    /// Returns the fully qualified access group published by ``LibraryConnectedTestHost``.
     ///
     /// Hosted integration tests run inside the test host process, so this reads
     /// `UUKeychainTestSharedAccessGroup` from the host app's Info.plist.
