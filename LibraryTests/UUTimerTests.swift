@@ -10,6 +10,9 @@ import UUSwiftTestCore
 
 @testable import UUSwiftCore
 
+// GCD timers and Date() measurements can jitter slightly below the requested interval.
+private let timerElapsedTolerance = 0.001
+
 class UUTimerTests: XCTestCase
 {
     // Grace we give the actual timer firing
@@ -32,7 +35,7 @@ class UUTimerTests: XCTestCase
             let end = Date.timeIntervalSinceReferenceDate
             let elapsed = end - lastStartTime
             UUTestLog("Timer \(timerId) Elapsed: \(elapsed)")
-            XCTAssertTrue(elapsed >= timeout)
+            XCTAssertGreaterThanOrEqual(elapsed, timeout - timerElapsedTolerance)
             
             exp.fulfill()
         }
@@ -77,7 +80,7 @@ class UUTimerTests: XCTestCase
             let end = Date.timeIntervalSinceReferenceDate
             let elapsed = end - lastStartTime
             UUTestLog("Timer \(timerId) Elapsed: \(elapsed)")
-            XCTAssertTrue(elapsed >= timeout)
+            XCTAssertGreaterThanOrEqual(elapsed, timeout - timerElapsedTolerance)
             
             exp.fulfill()
         }

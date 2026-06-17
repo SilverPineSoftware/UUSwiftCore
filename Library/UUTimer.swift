@@ -27,6 +27,7 @@ public class UUTimer
     
     public let shouldRepeat: Bool
     private var dispatchSource: DispatchSourceTimer? = nil
+    private var hasStarted = false
     
     public required init(
         identifier: String = UUID().uuidString,
@@ -45,18 +46,9 @@ public class UUTimer
         
         self.dispatchSource = DispatchSource.makeTimerSource(flags: [], queue: pool.dispatchQueue)
         
-        self.lastFireTime = Date().timeIntervalSinceReferenceDate
-        
-        var repeatingInterval: DispatchTimeInterval = .never
-        if (shouldRepeat)
-        {
-            repeatingInterval = .milliseconds(Int(interval * 1000.0))
-        }
-        
-        let fireTime: DispatchTime = (.now() + interval)
-        
         self.dispatchSource?.setEventHandler
         {
+            self.lastFireTime = Date().timeIntervalSinceReferenceDate
             block(self)
             
             if (!shouldRepeat)
@@ -64,22 +56,28 @@ public class UUTimer
                 self.cancel()
             }
         }
-        
-        self.dispatchSource?.schedule(deadline: fireTime, repeating: repeatingInterval)
     }
     
     public func start()
     {
-        if let src = dispatchSource
+        guard let src = dispatchSource, !hasStarted else
         {
-            UULog.verbose(tag: LOG_TAG, message: "Starting timer \(identifier), interval: \(interval), repeat: \(shouldRepeat), dispatchSource: \(String(describing: dispatchSource)), userInfo: \(String(describing: userInfo))")
-            pool.add(self)
-            src.resume()
+            UULog.verbose(tag: LOG_TAG, message: "Cannot start timer \(identifier) because dispatch source is nil or timer is already started")
+            return
         }
-        else
-        {
-            UULog.verbose(tag: LOG_TAG, message: "Cannot start timer \(identifier) because dispatch source is nil")
-        }
+        
+        hasStarted = true
+        lastFireTime = Date().timeIntervalSinceReferenceDate
+        
+        let repeatingInterval: DispatchTimeInterval = shouldRepeat
+            ? .milliseconds(Int((interval * 1000.0).rounded()))
+            : .never
+        
+        src.schedule(deadline: .now() + interval, repeating: repeatingInterval)
+        
+        UULog.verbose(tag: LOG_TAG, message: "Starting timer \(identifier), interval: \(interval), repeat: \(shouldRepeat), dispatchSource: \(String(describing: dispatchSource)), userInfo: \(String(describing: userInfo))")
+        pool.add(self)
+        src.resume()
     }
     
     public func cancel()
@@ -93,6 +91,7 @@ public class UUTimer
             self.dispatchSource = nil
         }
         
+        hasStarted = false
         pool.remove(self)
     }
 }
