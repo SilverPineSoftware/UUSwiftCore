@@ -114,6 +114,23 @@ final class UUResultTests: XCTestCase
         XCTAssertNil(failure.uuSuccess)
         XCTAssertNotNil(failure.uuFailure)
     }
+
+    // MARK: - get
+
+    func test_get_returnsSuccessValue() throws
+    {
+        let result: Result<Int, TestError> = .success(99)
+        XCTAssertEqual(try result.get(), 99)
+    }
+
+    func test_get_rethrowsFailure() throws
+    {
+        let result: Result<Int, TestError> = .failure(.sample)
+
+        XCTAssertThrowsError(try result.get()) { error in
+            XCTAssertEqual(error as? TestError, .sample)
+        }
+    }
 }
 
 private struct TestError: Error, Equatable
