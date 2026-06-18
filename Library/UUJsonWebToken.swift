@@ -617,3 +617,32 @@ private enum UUJwtParser
         return Date(timeIntervalSince1970: seconds)
     }
 }
+
+// MARK: - Header helpers
+
+public extension Dictionary where Key == AnyHashable, Value == Any
+{
+    /// Returns the `kid` (key ID) JOSE header value when present.
+    func uuJwtKeyID() -> String?
+    {
+        self[UUJwtConstants.Header.keyID] as? String
+    }
+}
+
+public extension UUSignedJsonWebToken
+{
+    /// `kid` header value when present.
+    var keyID: String?
+    {
+        header.uuJwtKeyID()
+    }
+}
+
+public extension UUEncryptedJsonWebToken
+{
+    /// `kid` protected-header value when present.
+    var keyID: String?
+    {
+        protectedHeader.uuJwtKeyID()
+    }
+}

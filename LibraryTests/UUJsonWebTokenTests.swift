@@ -229,10 +229,36 @@ final class UUSignedJsonWebTokenTests: XCTestCase
                 XCTAssertNil(token.expiration)
                 XCTAssertNil(token.issuedAt)
                 XCTAssertNil(token.notBefore)
+                XCTAssertNil(token.keyID)
 
             case .failure(let error):
                 XCTFail("Expected success, got \(error)")
         }
+    }
+
+    func test_keyID_returnsValueFromHeader()
+    {
+        switch UUSignedJsonWebToken.parse(
+            JwtTestVectors.signedToken(
+                header: [
+                    UUJwtConstants.Header.algorithm: "HS256",
+                    UUJwtConstants.Header.keyID: "my-key-id",
+                ],
+                payload: [:]))
+        {
+            case .success(let token):
+                XCTAssertEqual(token.keyID, "my-key-id")
+                XCTAssertEqual(token.header.uuJwtKeyID(), "my-key-id")
+
+            case .failure(let error):
+                XCTFail("Expected success, got \(error)")
+        }
+    }
+
+    func test_uuJwtKeyID_returnsNilForNonStringValue()
+    {
+        let header: [AnyHashable: Any] = [UUJwtConstants.Header.keyID: 123]
+        XCTAssertNil(header.uuJwtKeyID())
     }
 
     func test_claimAccessors_parseNumericDatesFromNSNumber()
@@ -283,6 +309,32 @@ final class UUEncryptedJsonWebTokenTests: XCTestCase
         {
             case .success(let token):
                 XCTAssertEqual(token.compactSerialization, JwtTestVectors.encryptedToken)
+
+            case .failure(let error):
+                XCTFail("Expected success, got \(error)")
+        }
+    }
+
+    func test_keyID_returnsValueFromProtectedHeader()
+    {
+        let header = JwtTestVectors.base64URL(json: [
+            UUJwtConstants.Header.algorithm: "RSA-OAEP",
+            UUJwtConstants.Header.encryption: "A256GCM",
+            UUJwtConstants.Header.keyID: "jwe-key-id",
+        ])
+        let token = [
+            header,
+            JwtTestVectors.base64URL(data: Data([0x01])),
+            JwtTestVectors.base64URL(data: Data([0x02])),
+            JwtTestVectors.base64URL(data: Data([0x03])),
+            JwtTestVectors.base64URL(data: Data([0x04])),
+        ].joined(separator: ".")
+
+        switch UUEncryptedJsonWebToken.parse(token)
+        {
+            case .success(let token):
+                XCTAssertEqual(token.keyID, "jwe-key-id")
+                XCTAssertEqual(token.protectedHeader.uuJwtKeyID(), "jwe-key-id")
 
             case .failure(let error):
                 XCTFail("Expected success, got \(error)")
