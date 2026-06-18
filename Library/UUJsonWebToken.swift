@@ -133,8 +133,7 @@ public enum UUJsonWebToken
 
     /// Parses a compact JWT string into a signed or encrypted token.
     ///
-    /// Leading and trailing whitespace is trimmed. A case-insensitive `Bearer `
-    /// prefix is removed when present.
+    /// Leading and trailing whitespace is trimmed.
     ///
     /// - Parameter string: Compact serialization (`header.payload.signature` or
     ///   `protectedHeader.encryptedKey.iv.ciphertext.authTag`).
@@ -537,15 +536,7 @@ private enum UUJwtParser
 
     static func normalizedToken(from string: String) -> String
     {
-        var token = string.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        if token.lowercased().hasPrefix("bearer ")
-        {
-            token = String(token.dropFirst("Bearer ".count))
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-
-        return token
+        string.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     static func decodeBase64Part(
