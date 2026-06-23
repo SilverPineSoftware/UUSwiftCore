@@ -81,23 +81,35 @@ public struct UUJwtConstants
 public enum UUJwtError: Error, Equatable, Sendable
 {
     /// The token does not contain exactly three (JWS) or five (JWE) segments.
+    ///
+    /// - Parameter count: The number of dot-separated segments that were found.
     case invalidPartCount(Int)
 
     /// A segment between dots was empty.
+    ///
+    /// - Parameter index: Zero-based index of the empty segment.
     case emptyPart(Int)
 
     /// A segment was not valid Base64URL.
+    ///
+    /// - Parameter part: Zero-based index of the segment that failed to decode.
     case invalidBase64(part: Int)
 
     /// A segment decoded successfully but was not a JSON object.
+    ///
+    /// - Parameter part: Zero-based index of the segment that was not a JSON object.
     case invalidJson(part: Int)
 
     /// A required JOSE header field was absent or not a non-empty string.
+    ///
+    /// - Parameter field: Header parameter name that was missing or invalid (for example `alg` or `enc`).
     case missingRequiredHeaderField(String)
 }
 
+/// Localized descriptions for ``UUJwtError`` cases.
 extension UUJwtError: LocalizedError
 {
+    /// A human-readable description of the JWT parsing failure.
     public var errorDescription: String?
     {
         switch self
@@ -123,6 +135,10 @@ extension UUJwtError: LocalizedError
 // MARK: - Parsed token
 
 /// A compact JSON Web Token, either signed (JWS) or encrypted (JWE).
+///
+/// Use ``parse(_:)`` to parse compact serialization, then switch on ``signed(_:)`` or
+/// ``encrypted(_:)``. Conforms to ``CustomStringConvertible`` and forwards ``description``
+/// to the wrapped token.
 public enum UUJsonWebToken
 {
     /// A signed token (JWS) with three Base64URL-encoded parts.
@@ -170,6 +186,8 @@ public enum UUJsonWebToken
 /// The header and payload are JSON objects. The signature is the decoded binary
 /// signature bytes. Use ``algorithm`` and payload claim accessors for logging
 /// and inspection without verifying the signature.
+///
+/// Conforms to ``CustomStringConvertible``; see ``description`` for the logging format.
 public struct UUSignedJsonWebToken
 {
     /// Original compact serialization used to create this value.
@@ -185,6 +203,12 @@ public struct UUSignedJsonWebToken
     public let signature: Data
 
     /// Creates a signed token from already-decoded parts.
+    ///
+    /// - Parameters:
+    ///   - compactSerialization: Original compact JWS string used to produce this value.
+    ///   - header: Decoded JOSE header object.
+    ///   - payload: Decoded payload claims object.
+    ///   - signature: Decoded signature bytes.
     public init(
         compactSerialization: String,
         header: [AnyHashable: Any],
@@ -256,7 +280,7 @@ public struct UUSignedJsonWebToken
         UUJwtParser.date(fromNumericDateClaim: payload[UUJwtConstants.Claim.issuedAt])
     }
 
-    /// `nbf` claim when present.
+    /// `nbf` claim as a ``Date`` when present.
     public var notBefore: Date?
     {
         UUJwtParser.date(fromNumericDateClaim: payload[UUJwtConstants.Claim.notBefore])
@@ -344,6 +368,8 @@ public struct UUSignedJsonWebToken
 ///
 /// The protected header is a JSON object. The remaining parts are opaque binary
 /// blobs used for key management and content encryption.
+///
+/// Conforms to ``CustomStringConvertible``; see ``description`` for the logging format.
 public struct UUEncryptedJsonWebToken
 {
     /// Original compact serialization used to create this value.
@@ -365,6 +391,14 @@ public struct UUEncryptedJsonWebToken
     public let authTag: Data
 
     /// Creates an encrypted token from already-decoded parts.
+    ///
+    /// - Parameters:
+    ///   - compactSerialization: Original compact JWE string used to produce this value.
+    ///   - protectedHeader: Decoded protected header object.
+    ///   - encryptedKey: Encrypted content encryption key bytes.
+    ///   - iv: Initialization vector bytes.
+    ///   - ciphertext: Encrypted ciphertext bytes.
+    ///   - authTag: Authentication tag bytes.
     public init(
         compactSerialization: String,
         protectedHeader: [AnyHashable: Any],
@@ -620,9 +654,12 @@ private enum UUJwtParser
 
 // MARK: - Header helpers
 
+/// JOSE header helpers for decoded JWT header dictionaries.
 public extension Dictionary where Key == AnyHashable, Value == Any
 {
     /// Returns the `kid` (key ID) JOSE header value when present.
+    ///
+    /// - Returns: The key identifier string, or `nil` when `kid` is absent or not a string.
     func uuJwtKeyID() -> String?
     {
         self[UUJwtConstants.Header.keyID] as? String
@@ -632,6 +669,8 @@ public extension Dictionary where Key == AnyHashable, Value == Any
 public extension UUSignedJsonWebToken
 {
     /// `kid` header value when present.
+    ///
+    /// Same value as calling ``uuJwtKeyID()`` on ``header``.
     var keyID: String?
     {
         header.uuJwtKeyID()
@@ -641,8 +680,114 @@ public extension UUSignedJsonWebToken
 public extension UUEncryptedJsonWebToken
 {
     /// `kid` protected-header value when present.
+    ///
+    /// Same value as calling ``uuJwtKeyID()`` on ``protectedHeader``.
     var keyID: String?
     {
         protectedHeader.uuJwtKeyID()
+    }
+}
+
+// MARK: - CustomStringConvertible
+
+extension UUJsonWebToken: CustomStringConvertible
+{
+    /// A logging-friendly summary that forwards to the wrapped signed or encrypted token.
+    public var description: String
+    {
+        switch self
+        {
+            case .signed(let token):
+                return token.description
+
+            case .encrypted(let token):
+                return token.description
+        }
+    }
+}
+
+extension UUSignedJsonWebToken: CustomStringConvertible
+{
+    /// A logging-friendly summary of a signed token.
+    ///
+    /// Includes the token kind (`JWS`), present header and claim accessors, and decoded
+    /// signature byte count. Omits absent fields and does not include compact serialization
+    /// or raw payload bytes.
+    ///
+    /// Example: `JWS, alg=HS256, typ=JWT, sub=1234567890, signatureBytes=32`
+    public var description: String
+    {
+        var components = ["JWS"]
+
+        if let algorithm
+        {
+            components.append("alg=\(algorithm)")
+        }
+
+        if let type
+        {
+            components.append("typ=\(type)")
+        }
+
+        if let keyID
+        {
+            components.append("kid=\(keyID)")
+        }
+
+        if let subject
+        {
+            components.append("sub=\(subject)")
+        }
+
+        if let issuer
+        {
+            components.append("iss=\(issuer)")
+        }
+
+        if let audience
+        {
+            components.append("aud=\(audience)")
+        }
+
+        components.append("signatureBytes=\(signature.count)")
+
+        return components.joined(separator: ", ")
+    }
+}
+
+extension UUEncryptedJsonWebToken: CustomStringConvertible
+{
+    /// A logging-friendly summary of an encrypted token.
+    ///
+    /// Includes the token kind (`JWE`), present protected-header fields, and decoded binary
+    /// part byte counts. Omits absent fields and does not include compact serialization
+    /// or ciphertext bytes.
+    ///
+    /// Example: `JWE, alg=RSA-OAEP, enc=A256GCM, encryptedKeyBytes=3, ivBytes=3, ciphertextBytes=14, authTagBytes=3`
+    public var description: String
+    {
+        var components = ["JWE"]
+
+        if let algorithm
+        {
+            components.append("alg=\(algorithm)")
+        }
+
+        if let encryption
+        {
+            components.append("enc=\(encryption)")
+        }
+
+        if let keyID
+        {
+            components.append("kid=\(keyID)")
+        }
+
+        components.append("encryptedKeyBytes=\(encryptedKey.count)")
+        components.append("ivBytes=\(iv.count)")
+        components.append("ciphertextBytes=\(ciphertext.count)")
+        components.append("authTagBytes=\(authTag.count)")
+
+        return components.joined(separator: ", ")
     }
 }

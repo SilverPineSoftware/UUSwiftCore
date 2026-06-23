@@ -445,3 +445,136 @@ final class UUJsonWebTokenTests: XCTestCase
         XCTAssertParseFailure(UUJsonWebToken.parse("a.b.c.d"), .invalidPartCount(4))
     }
 }
+
+// MARK: - CustomStringConvertible
+
+final class UUJsonWebTokenDescriptionTests: XCTestCase
+{
+    func test_description_signedToken_includesKnownClaimsAndSignatureSize()
+    {
+        guard case .success(let token) = UUSignedJsonWebToken.parse(JwtTestVectors.signedToken) else
+        {
+            XCTFail("Expected success")
+            return
+        }
+
+        let description = token.description
+
+        XCTAssertTrue(description.hasPrefix("JWS,"))
+        XCTAssertTrue(description.contains("alg=HS256"))
+        XCTAssertTrue(description.contains("typ=JWT"))
+        XCTAssertTrue(description.contains("sub=1234567890"))
+        XCTAssertTrue(description.contains("signatureBytes=\(token.signature.count)"))
+        XCTAssertFalse(description.contains("compactSerialization"))
+    }
+
+    func test_description_signedToken_omitsAbsentHeaderAndClaims()
+    {
+        guard case .success(let token) = UUSignedJsonWebToken.parse(
+            JwtTestVectors.signedToken(
+                header: [UUJwtConstants.Header.algorithm: "none"],
+                payload: [:]))
+        else
+        {
+            XCTFail("Expected success")
+            return
+        }
+
+        XCTAssertEqual(token.description, "JWS, alg=none, signatureBytes=4")
+    }
+
+    func test_description_signedToken_includesKeyIDWhenPresent()
+    {
+        guard case .success(let token) = UUSignedJsonWebToken.parse(
+            JwtTestVectors.signedToken(
+                header: [
+                    UUJwtConstants.Header.algorithm: "HS256",
+                    UUJwtConstants.Header.keyID: "my-key-id",
+                ],
+                payload: [:]))
+        else
+        {
+            XCTFail("Expected success")
+            return
+        }
+
+        XCTAssertTrue(token.description.contains("kid=my-key-id"))
+    }
+
+    func test_description_encryptedToken_includesAlgorithmsAndBinaryPartSizes()
+    {
+        guard case .success(let token) = UUEncryptedJsonWebToken.parse(JwtTestVectors.encryptedToken) else
+        {
+            XCTFail("Expected success")
+            return
+        }
+
+        XCTAssertEqual(
+            token.description,
+            "JWE, alg=RSA-OAEP, enc=A256GCM, encryptedKeyBytes=3, ivBytes=3, ciphertextBytes=14, authTagBytes=3")
+    }
+
+    func test_description_encryptedToken_includesKeyIDWhenPresent()
+    {
+        let header = JwtTestVectors.base64URL(json: [
+            UUJwtConstants.Header.algorithm: "RSA-OAEP",
+            UUJwtConstants.Header.encryption: "A256GCM",
+            UUJwtConstants.Header.keyID: "jwe-key-id",
+        ])
+        let tokenString = [
+            header,
+            JwtTestVectors.base64URL(data: Data([0x01])),
+            JwtTestVectors.base64URL(data: Data([0x02])),
+            JwtTestVectors.base64URL(data: Data([0x03])),
+            JwtTestVectors.base64URL(data: Data([0x04])),
+        ].joined(separator: ".")
+
+        guard case .success(let token) = UUEncryptedJsonWebToken.parse(tokenString) else
+        {
+            XCTFail("Expected success")
+            return
+        }
+
+        XCTAssertTrue(token.description.contains("kid=jwe-key-id"))
+    }
+
+    func test_description_jsonWebToken_signed_delegatesToSignedDescription()
+    {
+        guard case .success(let signed) = UUSignedJsonWebToken.parse(JwtTestVectors.signedToken),
+              case .success(let wrapped) = UUJsonWebToken.parse(JwtTestVectors.signedToken)
+        else
+        {
+            XCTFail("Expected success")
+            return
+        }
+
+        guard case .signed(let token) = wrapped else
+        {
+            XCTFail("Expected signed wrapper")
+            return
+        }
+
+        XCTAssertEqual(String(describing: wrapped), signed.description)
+        XCTAssertEqual(token.description, signed.description)
+    }
+
+    func test_description_jsonWebToken_encrypted_delegatesToEncryptedDescription()
+    {
+        guard case .success(let encrypted) = UUEncryptedJsonWebToken.parse(JwtTestVectors.encryptedToken),
+              case .success(let wrapped) = UUJsonWebToken.parse(JwtTestVectors.encryptedToken)
+        else
+        {
+            XCTFail("Expected success")
+            return
+        }
+
+        guard case .encrypted(let token) = wrapped else
+        {
+            XCTFail("Expected encrypted wrapper")
+            return
+        }
+
+        XCTAssertEqual(String(describing: wrapped), encrypted.description)
+        XCTAssertEqual(token.description, encrypted.description)
+    }
+}
