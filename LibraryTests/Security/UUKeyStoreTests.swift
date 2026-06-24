@@ -15,23 +15,102 @@ import XCTest
 private let keychainIntegrationUnavailableMessage =
     "Keychain access requires a signed test host with keychain entitlements."
 
+// MARK: - Error assertions
+
+private enum KeyStoreErrorExpectation
+{
+    case invalidAlias
+    case notFound
+    case duplicateItem
+    case authFailed
+    case interactionNotAllowed
+    case missingEntitlement
+    case secureEnclaveUnavailable
+    case keySizeNotSupported(Int)
+    case osStatus(OSStatus)
+
+    func matches(_ error: UUKeyStoreError) -> Bool
+    {
+        switch (self, error)
+        {
+            case (.invalidAlias, .invalidAlias):
+                return true
+
+            case (.notFound, .notFound):
+                return true
+
+            case (.duplicateItem, .duplicateItem):
+                return true
+
+            case (.authFailed, .authFailed):
+                return true
+
+            case (.interactionNotAllowed, .interactionNotAllowed):
+                return true
+
+            case (.missingEntitlement, .missingEntitlement):
+                return true
+
+            case (.secureEnclaveUnavailable, .secureEnclaveUnavailable):
+                return true
+
+            case (.keySizeNotSupported(let expected), .keySizeNotSupported(keySize: let actual)):
+                return expected == actual
+
+            case (.osStatus(let expected), .osStatus(let actual)):
+                return expected == actual
+
+            default:
+                return false
+        }
+    }
+}
+
+private func XCTAssertKeyStoreError(
+    _ error: UUKeyStoreError,
+    _ expected: KeyStoreErrorExpectation,
+    file: StaticString = #filePath,
+    line: UInt = #line)
+{
+    XCTAssertTrue(
+        expected.matches(error),
+        "Expected \(expected), got \(String(describing: error))",
+        file: file,
+        line: line)
+}
+
+private func XCTAssertKeyStoreError(
+    _ error: UUKeyStoreError?,
+    _ expected: KeyStoreErrorExpectation,
+    file: StaticString = #filePath,
+    line: UInt = #line)
+{
+    guard let error else
+    {
+        XCTFail("Expected \(expected), got nil", file: file, line: line)
+        return
+    }
+
+    XCTAssertKeyStoreError(error, expected, file: file, line: line)
+}
+
 // MARK: - Error mapping
 
 final class UUKeyStoreErrorTests: XCTestCase
 {
     func test_init_mapsKnownOSStatuses() async
     {
-        XCTAssertEqual(UUKeyStoreError(errSecItemNotFound), .notFound)
-        XCTAssertEqual(UUKeyStoreError(errSecDuplicateItem), .duplicateItem)
-        XCTAssertEqual(UUKeyStoreError(errSecAuthFailed), .authFailed)
-        XCTAssertEqual(UUKeyStoreError(errSecInteractionNotAllowed), .interactionNotAllowed)
-        XCTAssertEqual(UUKeyStoreError(errSecMissingEntitlement), .missingEntitlement)
+        XCTAssertKeyStoreError(UUKeyStoreError(errSecItemNotFound), .notFound)
+        XCTAssertKeyStoreError(UUKeyStoreError(errSecDuplicateItem), .duplicateItem)
+        XCTAssertKeyStoreError(UUKeyStoreError(errSecAuthFailed), .authFailed)
+        XCTAssertKeyStoreError(UUKeyStoreError(errSecInteractionNotAllowed), .interactionNotAllowed)
+        XCTAssertKeyStoreError(UUKeyStoreError(errSecMissingEntitlement), .missingEntitlement)
     }
 
     func test_init_mapsUnknownOSStatusToOsStatus() async
     {
         let status: OSStatus = -999
-        XCTAssertEqual(UUKeyStoreError(status), .osStatus(status))
+        XCTAssertKeyStoreError(UUKeyStoreError(status), .osStatus(status))
     }
 
     func test_errorDescription_isNonEmptyForAllCases() async
@@ -40,9 +119,9 @@ final class UUKeyStoreErrorTests: XCTestCase
             .invalidAlias,
             .notFound,
             .invalidEntry,
-            .keySizeNotSupported(384),
-            .keyGenerationFailed(nil),
-            .accessControlFailed(nil),
+            .keySizeNotSupported(keySize: 384),
+            .keyGenerationFailed(underlying: nil),
+            .accessControlFailed(underlying: nil),
             .keyAlgorithmUnsupported,
             .secureEnclaveUnavailable,
             .duplicateItem,
@@ -106,7 +185,7 @@ final class UUKeyStoreValidationTests: XCTestCase
     func test_deleteKey_returnsInvalidAliasForEmptyAlias() async
     {
         let error = await keyStore.deleteKey(alias: "")
-        XCTAssertEqual(error, .invalidAlias)
+        XCTAssertKeyStoreError(error, .invalidAlias)
     }
 
     func test_loadKey_secureEnclaveRequired_returnsUnavailableWhenSecureEnclaveMissing() async throws
@@ -137,9 +216,9 @@ final class UUKeyStoreValidationTests: XCTestCase
 
         let result = await secureStore.loadKey(alias: alias)
 
-        guard case .failure(.keySizeNotSupported(384)) = result else
+        guard case .failure(.keySizeNotSupported(keySize: 384)) = result else
         {
-            XCTFail("Expected .keySizeNotSupported(384), got \(result)")
+            XCTFail("Expected .keySizeNotSupported(keySize: 384), got \(result)")
             return
         }
     }

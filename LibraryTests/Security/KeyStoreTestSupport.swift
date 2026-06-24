@@ -129,7 +129,8 @@ enum KeyStoreTestSupport
             case .failure(.missingEntitlement):
                 return false
 
-            case .failure(.keyGenerationFailed(let error)) where error?.code == Int(errSecMissingEntitlement):
+            case .failure(.keyGenerationFailed(let underlying))
+                where (underlying as NSError?)?.code == Int(errSecMissingEntitlement):
                 return false
 
             default:

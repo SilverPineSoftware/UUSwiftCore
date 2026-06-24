@@ -21,7 +21,7 @@ import Foundation
 // MARK: - Errors
 
 /// Errors produced by ``UUKeyStore`` and ``UUKeyStoreProtocol`` implementations.
-public enum UUKeyStoreError: Error, Equatable, Sendable
+public enum UUKeyStoreError: Error, Sendable
 {
     /// ``loadKey(alias:)`` or ``deleteKey(alias:)`` was called with an empty alias.
     case invalidAlias
@@ -33,13 +33,13 @@ public enum UUKeyStoreError: Error, Equatable, Sendable
     case invalidEntry
 
     /// ``requireSecureEnclave`` is true and ``keySizeBits`` is not 256 (P-256).
-    case keySizeNotSupported(Int)
+    case keySizeNotSupported(keySize: Int)
 
     /// ``SecKeyCreateRandomKey`` failed.
-    case keyGenerationFailed(NSError?)
+    case keyGenerationFailed(underlying: Error?)
 
     /// ``SecAccessControlCreateWithFlags`` failed while building key attributes.
-    case accessControlFailed(NSError?)
+    case accessControlFailed(underlying: Error?)
 
     /// The generated or loaded key does not support ``UUKeyStore/algorithm``.
     case keyAlgorithmUnsupported
@@ -247,7 +247,7 @@ public actor UUKeyStore: UUKeyStoreProtocol
     {
         if requireSecureEnclave && keySizeBits != Self.secureEnclaveKeySizeBits
         {
-            return .failure(.keySizeNotSupported(keySizeBits))
+            return .failure(.keySizeNotSupported(keySize: keySizeBits))
         }
 
         switch await loadExisting(alias)
@@ -376,7 +376,7 @@ public actor UUKeyStore: UUKeyStoreProtocol
         {
             guard keySizeBits == Self.secureEnclaveKeySizeBits else
             {
-                return .failure(.keySizeNotSupported(keySizeBits))
+                return .failure(.keySizeNotSupported(keySize: keySizeBits))
             }
 
             guard SecureEnclave.isAvailable else
@@ -405,7 +405,7 @@ public actor UUKeyStore: UUKeyStoreProtocol
                 return await loadExisting(alias)
             }
 
-            return .failure(.keyGenerationFailed(nsError))
+            return .failure(.keyGenerationFailed(underlying: nsError))
         }
 
         guard supportsAlgorithm(key) else
@@ -487,7 +487,7 @@ public actor UUKeyStore: UUKeyStoreProtocol
             flags,
             &error) else
         {
-            return .failure(.accessControlFailed(error?.takeRetainedValue() as? NSError))
+            return .failure(.accessControlFailed(underlying: error?.takeRetainedValue() as? NSError))
         }
 
         return .success(access)
