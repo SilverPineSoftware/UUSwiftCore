@@ -229,7 +229,7 @@ public actor UUKeyStore: UUKeyStoreProtocol
     ///   - algorithm: ``SecKeyAlgorithm`` used to validate loaded keys. Defaults to documented ECIES variable-IV AES-GCM.
     ///   - accessLevel: Keychain accessibility embedded in ``SecAccessControl`` for new keys.
     public init(
-        tagPrefix: String,
+        tagPrefix: String = "com.silverpine.uu.core.security",
         accessGroup: String? = nil,
         keySizeBits: Int = 256,
         requireSecureEnclave: Bool = true,
