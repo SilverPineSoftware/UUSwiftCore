@@ -18,6 +18,8 @@ import CryptoKit
 import Foundation
 @preconcurrency import Security
 
+extension SecKey: @unchecked @retroactive Sendable {}
+
 // MARK: - Errors
 
 /// Errors produced by ``UUKeyStore`` and ``UUKeyStoreProtocol`` implementations.
