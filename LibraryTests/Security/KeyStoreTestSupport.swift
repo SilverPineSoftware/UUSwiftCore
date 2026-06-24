@@ -12,14 +12,20 @@ import Security
 
 enum KeyStoreTestSupport
 {
-    static func makeTagPrefix(suffix: String = UUID().uuidString) -> String
+    static func makeNamespace(suffix: String = UUID().uuidString) -> String
     {
         return "com.uu.tests.keystore.\(suffix)"
     }
 
-    static func makeAlias() -> String
+    static func makeAlias(namespace: String? = nil) -> String
     {
-        return "alias-\(UUID().uuidString)"
+        let base = namespace ?? makeNamespace()
+        return "\(base).alias-\(UUID().uuidString)"
+    }
+
+    static func qualifiedAlias(namespace: String, name: String) -> String
+    {
+        return "\(namespace).\(name)"
     }
 
     static func defaultAlgorithm() -> SecKeyAlgorithm
@@ -90,9 +96,9 @@ enum KeyStoreTestSupport
         return decrypted
     }
 
-    static func deleteKey(tagPrefix: String, alias: String, keySizeBits: Int = 256)
+    static func deleteKey(alias: String, keySizeBits: Int = 256)
     {
-        let tag = "\(tagPrefix).\(alias)".data(using: .utf8)!
+        let tag = alias.data(using: .utf8)!
 
         let query: [String: Any] = [
             kSecClass as String: kSecClassKey,
@@ -111,9 +117,8 @@ enum KeyStoreTestSupport
     /// Hosted integration tests (Xcode test host) typically succeed.
     static func isKeychainAccessible() async -> Bool
     {
-        let prefix = makeTagPrefix()
         let alias = makeAlias()
-        let store = UUKeyStore(tagPrefix: prefix, requireSecureEnclave: false)
+        let store = UUKeyStore(requireSecureEnclave: false)
 
         switch await store.loadKey(alias: alias)
         {

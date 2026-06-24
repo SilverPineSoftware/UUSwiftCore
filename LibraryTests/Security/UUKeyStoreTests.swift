@@ -64,23 +64,28 @@ final class UUKeyStoreErrorTests: XCTestCase
 final class UUKeyStoreValidationTests: XCTestCase
 {
     private var keyStore: UUKeyStore!
-    private var tagPrefix: String!
+    private var primaryAlias: String!
+    private var secondaryAlias: String!
 
     override func setUp() async throws
     {
         try await super.setUp()
-        tagPrefix = KeyStoreTestSupport.makeTagPrefix()
-        keyStore = UUKeyStore(
-            tagPrefix: tagPrefix,
-            requireSecureEnclave: false)
+        let namespace = KeyStoreTestSupport.makeNamespace()
+        primaryAlias = KeyStoreTestSupport.qualifiedAlias(namespace: namespace, name: "primary-key")
+        secondaryAlias = KeyStoreTestSupport.qualifiedAlias(namespace: namespace, name: "secondary-key")
+        keyStore = UUKeyStore(requireSecureEnclave: false)
     }
 
     override func tearDown() async throws
     {
-        if let tagPrefix
+        if let primaryAlias
         {
-            KeyStoreTestSupport.deleteKey(tagPrefix: tagPrefix, alias: TestAliases.primary)
-            KeyStoreTestSupport.deleteKey(tagPrefix: tagPrefix, alias: TestAliases.secondary)
+            KeyStoreTestSupport.deleteKey(alias: primaryAlias)
+        }
+
+        if let secondaryAlias
+        {
+            KeyStoreTestSupport.deleteKey(alias: secondaryAlias)
         }
 
         keyStore = nil
@@ -111,9 +116,7 @@ final class UUKeyStoreValidationTests: XCTestCase
             throw XCTSkip("Secure Enclave is available; unavailable-path test applies to Simulator and legacy Mac.")
         }
 
-        let secureStore = UUKeyStore(
-            tagPrefix: KeyStoreTestSupport.makeTagPrefix(),
-            requireSecureEnclave: true)
+        let secureStore = UUKeyStore(requireSecureEnclave: true)
         let alias = KeyStoreTestSupport.makeAlias()
 
         let result = await secureStore.loadKey(alias: alias)
@@ -128,7 +131,6 @@ final class UUKeyStoreValidationTests: XCTestCase
     func test_loadKey_secureEnclaveRequired_returnsKeySizeNotSupportedForNon256BitKeys() async
     {
         let secureStore = UUKeyStore(
-            tagPrefix: KeyStoreTestSupport.makeTagPrefix(),
             keySizeBits: 384,
             requireSecureEnclave: true)
         let alias = KeyStoreTestSupport.makeAlias()
@@ -147,7 +149,8 @@ final class UUKeyStoreValidationTests: XCTestCase
 
 final class UUKeyStoreIntegrationTests: XCTestCase
 {
-    private var tagPrefix: String!
+    private var primaryAlias: String!
+    private var secondaryAlias: String!
     private var keyStore: UUKeyStore!
 
     override func setUp() async throws
@@ -159,21 +162,26 @@ final class UUKeyStoreIntegrationTests: XCTestCase
             throw XCTSkip(keychainIntegrationUnavailableMessage)
         }
 
-        tagPrefix = KeyStoreTestSupport.makeTagPrefix()
+        let namespace = KeyStoreTestSupport.makeNamespace()
+        primaryAlias = KeyStoreTestSupport.qualifiedAlias(namespace: namespace, name: "primary-key")
+        secondaryAlias = KeyStoreTestSupport.qualifiedAlias(namespace: namespace, name: "secondary-key")
         keyStore = UUKeyStore(
-            tagPrefix: tagPrefix,
             requireSecureEnclave: false,
             algorithm: KeyStoreTestSupport.defaultAlgorithm())
     }
 
     override func tearDown() async throws
     {
-        if let tagPrefix
+        if let primaryAlias
         {
-            _ = await keyStore?.deleteKey(alias: TestAliases.primary)
-            _ = await keyStore?.deleteKey(alias: TestAliases.secondary)
-            KeyStoreTestSupport.deleteKey(tagPrefix: tagPrefix, alias: TestAliases.primary)
-            KeyStoreTestSupport.deleteKey(tagPrefix: tagPrefix, alias: TestAliases.secondary)
+            _ = await keyStore?.deleteKey(alias: primaryAlias)
+            KeyStoreTestSupport.deleteKey(alias: primaryAlias)
+        }
+
+        if let secondaryAlias
+        {
+            _ = await keyStore?.deleteKey(alias: secondaryAlias)
+            KeyStoreTestSupport.deleteKey(alias: secondaryAlias)
         }
 
         keyStore = nil
@@ -182,8 +190,7 @@ final class UUKeyStoreIntegrationTests: XCTestCase
 
     func test_loadKey_createsAndReturnsPrivateKey() async throws
     {
-        let alias = TestAliases.primary
-        let result = await keyStore.loadKey(alias: alias)
+        let result = await keyStore.loadKey(alias: primaryAlias)
 
         let privateKey = try XCTUnwrap(result.get())
         XCTAssertNotNil(SecKeyCopyPublicKey(privateKey))
@@ -192,10 +199,8 @@ final class UUKeyStoreIntegrationTests: XCTestCase
 
     func test_loadKey_isIdempotentForSameAlias() async throws
     {
-        let alias = TestAliases.primary
-
-        let first = try await keyStore.loadKey(alias: alias).get()
-        let second = try await keyStore.loadKey(alias: alias).get()
+        let first = try await keyStore.loadKey(alias: primaryAlias).get()
+        let second = try await keyStore.loadKey(alias: primaryAlias).get()
 
         let algorithm = KeyStoreTestSupport.defaultAlgorithm()
         XCTAssertTrue(KeyStoreTestSupport.supportsAlgorithm(first, algorithm: algorithm))
@@ -204,7 +209,7 @@ final class UUKeyStoreIntegrationTests: XCTestCase
 
     func test_loadKey_supportsConfiguredEciesAlgorithm() async throws
     {
-        let privateKey = try await keyStore.loadKey(alias: TestAliases.primary).get()
+        let privateKey = try await keyStore.loadKey(alias: primaryAlias).get()
 
         XCTAssertTrue(KeyStoreTestSupport.supportsAlgorithm(
             privateKey,
@@ -213,7 +218,7 @@ final class UUKeyStoreIntegrationTests: XCTestCase
 
     func test_loadKey_eciesRoundTrip_succeeds() async throws
     {
-        let privateKey = try await keyStore.loadKey(alias: TestAliases.primary).get()
+        let privateKey = try await keyStore.loadKey(alias: primaryAlias).get()
         let plaintext = Data("keystore-round-trip".utf8)
 
         let decrypted = try KeyStoreTestSupport.eciesRoundTrip(
@@ -226,45 +231,40 @@ final class UUKeyStoreIntegrationTests: XCTestCase
 
     func test_deleteKey_removesStoredKey() async throws
     {
-        let alias = TestAliases.primary
-        _ = try await keyStore.loadKey(alias: alias).get()
+        _ = try await keyStore.loadKey(alias: primaryAlias).get()
 
-        let deleteError = await keyStore.deleteKey(alias: alias)
+        let deleteError = await keyStore.deleteKey(alias: primaryAlias)
         XCTAssertNil(deleteError)
 
-        let reload = await keyStore.loadKey(alias: alias)
+        let reload = await keyStore.loadKey(alias: primaryAlias)
         XCTAssertNotNil(try? reload.get())
     }
 
     func test_deleteKey_isIdempotentWhenKeyIsMissing() async
     {
-        let deleteError = await keyStore.deleteKey(alias: TestAliases.primary)
+        let deleteError = await keyStore.deleteKey(alias: primaryAlias)
         XCTAssertNil(deleteError)
     }
 
-    func test_keysAreScopedByTagPrefix() async throws
+    func test_sameAlias_isSharedAcrossKeyStoreInstances() async throws
     {
-        let alias = TestAliases.primary
-        let otherPrefix = KeyStoreTestSupport.makeTagPrefix()
-        let otherStore = UUKeyStore(tagPrefix: otherPrefix, requireSecureEnclave: false)
+        let otherStore = UUKeyStore(requireSecureEnclave: false)
 
-        defer
-        {
-            KeyStoreTestSupport.deleteKey(tagPrefix: otherPrefix, alias: alias)
-        }
+        let originalKey = try await keyStore.loadKey(alias: primaryAlias).get()
+        let otherKey = try await otherStore.loadKey(alias: primaryAlias).get()
 
-        _ = try await keyStore.loadKey(alias: alias).get()
+        let plaintext = Data("shared-alias".utf8)
+        let decryptedOriginal = try KeyStoreTestSupport.eciesRoundTrip(privateKey: originalKey, plaintext: plaintext)
+        let decryptedOther = try KeyStoreTestSupport.eciesRoundTrip(privateKey: otherKey, plaintext: plaintext)
 
-        let otherResult = await otherStore.loadKey(alias: alias)
-        let otherKey = try XCTUnwrap(otherResult.get())
-
-        XCTAssertFalse(KeyStoreTestSupport.isSecureEnclaveBacked(otherKey))
+        XCTAssertEqual(decryptedOriginal, plaintext)
+        XCTAssertEqual(decryptedOther, plaintext)
     }
 
     func test_multipleAliases_storeIndependently() async throws
     {
-        let keyA = try await keyStore.loadKey(alias: TestAliases.primary).get()
-        let keyB = try await keyStore.loadKey(alias: TestAliases.secondary).get()
+        let keyA = try await keyStore.loadKey(alias: primaryAlias).get()
+        let keyB = try await keyStore.loadKey(alias: secondaryAlias).get()
 
         let plaintextA = Data("alpha".utf8)
         let plaintextB = Data("beta".utf8)
@@ -278,14 +278,13 @@ final class UUKeyStoreIntegrationTests: XCTestCase
 
     func test_concurrentLoadKeyFromSeparateStores_resolvesDuplicateItem() async throws
     {
-        let sharedPrefix = KeyStoreTestSupport.makeTagPrefix()
         let alias = KeyStoreTestSupport.makeAlias()
-        let storeA = UUKeyStore(tagPrefix: sharedPrefix, requireSecureEnclave: false)
-        let storeB = UUKeyStore(tagPrefix: sharedPrefix, requireSecureEnclave: false)
+        let storeA = UUKeyStore(requireSecureEnclave: false)
+        let storeB = UUKeyStore(requireSecureEnclave: false)
 
         defer
         {
-            KeyStoreTestSupport.deleteKey(tagPrefix: sharedPrefix, alias: alias)
+            KeyStoreTestSupport.deleteKey(alias: alias)
         }
 
         async let loadA = storeA.loadKey(alias: alias)
@@ -307,8 +306,7 @@ final class UUKeyStoreIntegrationTests: XCTestCase
 
     func test_loadKey_afterDelete_producesNewWorkingKey() async throws
     {
-        let alias = TestAliases.primary
-        let originalKey = try await keyStore.loadKey(alias: alias).get()
+        let originalKey = try await keyStore.loadKey(alias: primaryAlias).get()
         let originalPlaintext = Data("before-delete".utf8)
 
         guard let originalPublicKey = SecKeyCopyPublicKey(originalKey) else
@@ -329,9 +327,9 @@ final class UUKeyStoreIntegrationTests: XCTestCase
             throw error?.takeRetainedValue() ?? KeyStoreTestError.encryptionFailed
         }
 
-        _ = await keyStore.deleteKey(alias: alias)
+        _ = await keyStore.deleteKey(alias: primaryAlias)
 
-        let replacementKey = try await keyStore.loadKey(alias: alias).get()
+        let replacementKey = try await keyStore.loadKey(alias: primaryAlias).get()
         let replacementPlaintext = Data("after-delete".utf8)
         let replacementDecrypted = try KeyStoreTestSupport.eciesRoundTrip(
             privateKey: replacementKey,
@@ -353,17 +351,15 @@ final class UUKeyStoreIntegrationTests: XCTestCase
 
 final class UUKeyStoreSecureEnclaveIntegrationTests: XCTestCase
 {
-    private var tagPrefix: String?
     private var alias: String?
 
     override func tearDown() async throws
     {
-        if let tagPrefix, let alias
+        if let alias
         {
-            KeyStoreTestSupport.deleteKey(tagPrefix: tagPrefix, alias: alias)
+            KeyStoreTestSupport.deleteKey(alias: alias)
         }
 
-        tagPrefix = nil
         alias = nil
         try await super.tearDown()
     }
@@ -380,10 +376,8 @@ final class UUKeyStoreSecureEnclaveIntegrationTests: XCTestCase
             throw XCTSkip(keychainIntegrationUnavailableMessage)
         }
 
-        tagPrefix = KeyStoreTestSupport.makeTagPrefix()
         alias = KeyStoreTestSupport.makeAlias()
         let keyStore = UUKeyStore(
-            tagPrefix: tagPrefix!,
             requireSecureEnclave: true,
             algorithm: KeyStoreTestSupport.defaultAlgorithm())
 
@@ -399,14 +393,6 @@ final class UUKeyStoreSecureEnclaveIntegrationTests: XCTestCase
         let decrypted = try KeyStoreTestSupport.eciesRoundTrip(privateKey: privateKey, plaintext: plaintext)
         XCTAssertEqual(decrypted, plaintext)
     }
-}
-
-// MARK: - Test support
-
-private enum TestAliases
-{
-    static let primary = "primary-key"
-    static let secondary = "secondary-key"
 }
 
 #endif

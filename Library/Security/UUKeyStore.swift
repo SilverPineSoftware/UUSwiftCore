@@ -7,8 +7,8 @@
 //  Async Keychain Services storage for elliptic-curve ``SecKey`` references on iOS and macOS.
 //
 //  ``UUKeyStoreProtocol`` defines scoped load and delete operations for device-bound private keys.
-//  ``UUKeyStore`` implements the protocol as an actor, namespacing keys by ``tagPrefix`` and
-//  ``kSecAttrApplicationTag``. Apps typically expose a shared instance per app or feature boundary
+//  ``UUKeyStore`` implements the protocol as an actor, storing keys under ``kSecAttrApplicationTag``.
+//  Apps typically expose a shared instance per app or feature boundary
 //  (for example `AppKeyStore.shared`).
 //
 
@@ -26,7 +26,7 @@ public enum UUKeyStoreError: Error, Equatable, Sendable
     /// ``loadKey(alias:)`` or ``deleteKey(alias:)`` was called with an empty alias.
     case invalidAlias
 
-    /// No key exists for the given tag prefix and alias.
+    /// No key exists for the given alias.
     case notFound
 
     /// A matching keychain entry exists but is unusable (wrong backing, algorithm, or type).
@@ -154,24 +154,21 @@ extension UUKeyStoreError: LocalizedError
 
 // MARK: - Protocol
 
-/// Async Keychain storage for elliptic-curve private keys scoped by ``tagPrefix`` and optional ``accessGroup``.
+/// Async Keychain storage for elliptic-curve private keys identified by alias and optional ``accessGroup``.
 ///
 /// Inject a ``UUKeyStore`` instance (or test double) instead of calling Security framework key APIs
-/// directly. Keys are stored under ``kSecAttrApplicationTag`` as UTF-8 data derived from
-/// ``tagPrefix`` and the alias passed to ``loadKey(alias:)``.
+/// directly. The alias passed to ``loadKey(alias:)`` is stored as UTF-8 ``kSecAttrApplicationTag``
+/// data (reverse-DNS strings are recommended).
 ///
 /// Apps typically define a shared instance:
 ///
 /// ```swift
-/// enum AppKeyStore {
-///     static let shared = UUKeyStore(tagPrefix: "com.example.app.keys")
+/// struct AppKeyStore {
+///     static let shared = UUKeyStore()
 /// }
 /// ```
-public protocol UUKeyStoreProtocol
+public protocol UUKeyStoreProtocol: Sendable
 {
-    /// Namespace prefix for stored keys, combined with the alias to form ``kSecAttrApplicationTag``.
-    var tagPrefix: String { get }
-
     /// Optional Keychain access group for app extensions, mapped to ``kSecAttrAccessGroup``.
     var accessGroup: String? { get }
 
@@ -192,7 +189,7 @@ public protocol UUKeyStoreProtocol
     /// Looks up an existing key in the Keychain. When none is found, generates a new P-256 EC key.
     /// Invalid entries (for example a Keychain key when Secure Enclave is required) are deleted and
     /// replaced.
-    @preconcurrency func loadKey(alias: String) async -> Result<SecKey, UUKeyStoreError>
+    func loadKey(alias: String) async -> Result<SecKey, UUKeyStoreError>
 
     /// Removes the key for ``alias``. Succeeds when the key is already absent.
     func deleteKey(alias: String) async -> UUKeyStoreError?
@@ -202,8 +199,8 @@ public protocol UUKeyStoreProtocol
 
 /// Default ``UUKeyStoreProtocol`` implementation backed by Keychain Services ``kSecClassKey`` items.
 ///
-/// Each instance is isolated to an actor so Security framework calls are serialized. Use a dedicated
-/// ``tagPrefix`` per app or feature namespace.
+/// Each instance is isolated to an actor so Security framework calls are serialized. Use unique
+/// reverse-DNS aliases to avoid collisions across features or apps.
 ///
 /// When ``requireSecureEnclave`` is true, keys are created with ``kSecAttrTokenIDSecureEnclave`` and
 /// ``SecAccessControlCreateFlags/privateKeyUsage``. Otherwise keys are stored in the Keychain with
@@ -212,31 +209,27 @@ public actor UUKeyStore: UUKeyStoreProtocol
 {
     private static let secureEnclaveKeySizeBits = 256
 
-    public let tagPrefix: String
     public let accessGroup: String?
     public let keySizeBits: Int
     public let requireSecureEnclave: Bool
     public let algorithm: SecKeyAlgorithm
     public let accessLevel: UUKeychainAccessLevel
 
-    /// Creates a Keychain key store for the given tag namespace.
+    /// Creates a Keychain key store.
     ///
     /// - Parameters:
-    ///   - tagPrefix: Prefix combined with each alias to form ``kSecAttrApplicationTag`` (reverse-DNS recommended).
     ///   - accessGroup: Optional ``kSecAttrAccessGroup`` for shared access with extensions.
     ///   - keySizeBits: EC key size in bits. Defaults to 256 (P-256).
     ///   - requireSecureEnclave: When true, keys are created in the Secure Enclave when hardware is available.
     ///   - algorithm: ``SecKeyAlgorithm`` used to validate loaded keys. Defaults to documented ECIES variable-IV AES-GCM.
     ///   - accessLevel: Keychain accessibility embedded in ``SecAccessControl`` for new keys.
     public init(
-        tagPrefix: String = "com.silverpine.uu.core.security",
         accessGroup: String? = nil,
         keySizeBits: Int = 256,
         requireSecureEnclave: Bool = true,
         algorithm: SecKeyAlgorithm = .eciesEncryptionStandardVariableIVX963SHA256AESGCM,
         accessLevel: UUKeychainAccessLevel = .afterFirstUnlockThisDeviceOnly)
     {
-        self.tagPrefix = tagPrefix
         self.accessGroup = accessGroup
         self.keySizeBits = keySizeBits
         self.requireSecureEnclave = requireSecureEnclave
@@ -248,7 +241,7 @@ public actor UUKeyStore: UUKeyStoreProtocol
 
     /// Loads or generates a private ``SecKey`` stored under ``alias``.
     ///
-    /// - Parameter alias: Logical key name within this store's ``tagPrefix``. Must not be empty.
+    /// - Parameter alias: Value stored in ``kSecAttrApplicationTag`` (UTF-8). Must not be empty.
     /// - Returns: A ``SecKey`` private key reference on success, or a ``UUKeyStoreError`` on failure.
     public func loadKey(alias: String) async -> Result<SecKey, UUKeyStoreError>
     {
@@ -277,7 +270,7 @@ public actor UUKeyStore: UUKeyStoreProtocol
 
     /// Removes the private key stored under ``alias``.
     ///
-    /// - Parameter alias: Logical key name within this store's ``tagPrefix``. Must not be empty.
+    /// - Parameter alias: Value stored in ``kSecAttrApplicationTag`` (UTF-8). Must not be empty.
     /// - Returns: `nil` on success (including when the key is already absent), or a ``UUKeyStoreError`` on failure.
     public func deleteKey(alias: String) async -> UUKeyStoreError?
     {
@@ -312,7 +305,7 @@ public actor UUKeyStore: UUKeyStoreProtocol
             return .failure(.invalidAlias)
         }
 
-        guard let tag = fullTag(alias).data(using: .utf8) else
+        guard let tag = alias.data(using: .utf8) else
         {
             return .failure(.invalidAlias)
         }
@@ -451,11 +444,6 @@ public actor UUKeyStore: UUKeyStoreProtocol
         }
 
         return tokenID == (kSecAttrTokenIDSecureEnclave as String)
-    }
-
-    private func fullTag(_ alias: String) -> String
-    {
-        "\(self.tagPrefix).\(alias)"
     }
 
     private func commonQuery(_ tag: Data) -> [AnyHashable: Any]
