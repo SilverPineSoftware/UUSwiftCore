@@ -419,17 +419,17 @@ public actor UUKeychain: UUKeychainProtocol
         return nil
     }
 
-    private func commonQuery(_ key: String) -> [String: Any]
+    private func commonQuery(_ key: String) -> [AnyHashable: Any]
     {
-        var query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: serviceIdentifier,
-            kSecAttrAccount as String: key,
+        var query: [AnyHashable: Any] = [
+            kSecClass: kSecClassGenericPassword,
+            kSecAttrService: serviceIdentifier,
+            kSecAttrAccount: key,
         ]
 
         if let accessGroup
         {
-            query[kSecAttrAccessGroup as String] = accessGroup
+            query[kSecAttrAccessGroup] = accessGroup
         }
 
         return query
@@ -438,8 +438,8 @@ public actor UUKeychain: UUKeychainProtocol
     private func readQuery(_ key: String) -> CFDictionary
     {
         var query = commonQuery(key)
-        query[kSecReturnData as String] = true
-        query[kSecMatchLimit as String] = kSecMatchLimitOne
+        query[kSecReturnData] = true
+        query[kSecMatchLimit] = kSecMatchLimitOne
         return query as CFDictionary
     }
 
@@ -449,8 +449,8 @@ public actor UUKeychain: UUKeychainProtocol
         _ data: Data) -> CFDictionary
     {
         var query = commonQuery(key)
-        query[kSecValueData as String] = data
-        query[kSecAttrAccessible as String] = accessLevel.value
+        query[kSecValueData] = data
+        query[kSecAttrAccessible] = accessLevel.value
         return query as CFDictionary
     }
 
