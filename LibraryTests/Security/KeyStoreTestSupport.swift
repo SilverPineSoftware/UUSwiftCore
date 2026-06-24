@@ -96,6 +96,28 @@ enum KeyStoreTestSupport
         return decrypted
     }
 
+    /// Creates a non-persistent P-256 private key for unit tests without Keychain access.
+    static func generateEphemeralPrivateKey() throws -> SecKey
+    {
+        let privateKeyAttributes: [String: Any] = [
+            kSecAttrIsPermanent as String: false,
+        ]
+
+        let parameters: [String: Any] = [
+            kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
+            kSecAttrKeySizeInBits as String: 256,
+            kSecPrivateKeyAttrs as String: privateKeyAttributes,
+        ]
+
+        var error: Unmanaged<CFError>?
+        guard let privateKey = SecKeyCreateRandomKey(parameters as CFDictionary, &error) else
+        {
+            throw error?.takeRetainedValue() ?? KeyStoreTestError.keyGenerationFailed
+        }
+
+        return privateKey
+    }
+
     static func deleteKey(alias: String, keySizeBits: Int = 256)
     {
         let tag = alias.data(using: .utf8)!
@@ -144,6 +166,7 @@ enum KeyStoreTestError: Error
     case missingPublicKey
     case encryptionFailed
     case decryptionFailed
+    case keyGenerationFailed
 }
 
 #endif
