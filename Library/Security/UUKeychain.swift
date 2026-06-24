@@ -11,9 +11,9 @@
 //  Async Keychain Services storage for generic passwords on iOS and macOS.
 //
 //  ``UUKeychainProtocol`` defines scoped read, write, and clear operations.
-//  ``UUKeychain`` implements the protocol as an actor, namespacing items by
-//  ``serviceIdentifier``. Apps typically expose a shared instance per app or
-//  feature boundary (for example `AppKeychain.shared`).
+//  ``UUKeychainBase`` implements the protocol as an open class with hooks to transform stored bytes.
+//  ``UUKeychain`` stores logical values unchanged. ``UUEncryptedKeychain`` encrypts and decrypts
+//  via ``UUCrypto``. Apps typically expose a shared instance per app or feature boundary.
 //
 
 #if os(iOS) || os(macOS)
@@ -101,6 +101,9 @@ public enum UUKeychainError: Error, Equatable, Sendable
     /// A string could not be encoded for storage.
     case invalidStringEncoding
 
+    /// ``transformForWrite(key:accessLevel:data:)`` or ``transformForRead(key:storedData:)`` failed.
+    case transformFailed(underlying: Error?)
+
     /// An underlying Keychain ``OSStatus`` not mapped to a specific case.
     case osStatus(OSStatus)
 
@@ -126,6 +129,30 @@ public enum UUKeychainError: Error, Equatable, Sendable
 
             default:
                 self = .osStatus(status)
+        }
+    }
+
+    public static func == (lhs: UUKeychainError, rhs: UUKeychainError) -> Bool
+    {
+        switch (lhs, rhs)
+        {
+            case (.notFound, .notFound),
+                 (.duplicateItem, .duplicateItem),
+                 (.authFailed, .authFailed),
+                 (.interactionNotAllowed, .interactionNotAllowed),
+                 (.missingEntitlement, .missingEntitlement),
+                 (.unexpectedData, .unexpectedData),
+                 (.emptyData, .emptyData),
+                 (.invalidKey, .invalidKey),
+                 (.invalidStringEncoding, .invalidStringEncoding),
+                 (.transformFailed, .transformFailed):
+                return true
+
+            case (.osStatus(let left), .osStatus(let right)):
+                return left == right
+
+            default:
+                return false
         }
     }
 }
@@ -163,6 +190,14 @@ extension UUKeychainError: LocalizedError
             case .invalidStringEncoding:
                 return "String could not be encoded for keychain storage."
 
+            case .transformFailed(let underlying):
+                if let underlying
+                {
+                    return "Keychain data transformation failed: \(underlying.localizedDescription)"
+                }
+
+                return "Keychain data transformation failed."
+
             case .osStatus(let status):
                 if let message = SecCopyErrorMessageString(status, nil) as String?
                 {
@@ -196,7 +231,7 @@ public extension UUKeychainError
             case .missingEntitlement:
                 return errSecMissingEntitlement
 
-            case .unexpectedData, .emptyData, .invalidKey, .invalidStringEncoding:
+            case .unexpectedData, .emptyData, .invalidKey, .invalidStringEncoding, .transformFailed:
                 return nil
 
             case .osStatus(let status):
@@ -300,13 +335,18 @@ public extension UUKeychainProtocol
 
 // MARK: - Implementation
 
-/// Default ``UUKeychainProtocol`` implementation backed by Keychain Services generic passwords.
+/// Keychain Services generic-password storage with overridable byte transformation.
 ///
-/// Each instance is isolated to an actor so synchronous Security APIs do not block callers of
-/// other concurrent work at the call site. Use a dedicated ``serviceIdentifier`` per app or
-/// feature namespace.
-public actor UUKeychain: UUKeychainProtocol
+/// Subclasses override ``transformForWrite(key:accessLevel:data:)`` and
+/// ``transformForRead(key:storedData:)`` to encrypt, compress, or otherwise transform values before
+/// they are persisted. The default implementation stores logical bytes unchanged.
+///
+/// Security framework calls are serialized per instance with an internal lock. Transform hooks run
+/// outside the lock so async work (for example ``UUCrypto``) does not block other Keychain access.
+open class UUKeychainBase: UUKeychainProtocol, @unchecked Sendable
 {
+    private let lock = NSLock()
+
     public let serviceIdentifier: String
     public let accessGroup: String?
 
@@ -323,13 +363,149 @@ public actor UUKeychain: UUKeychainProtocol
         self.accessGroup = accessGroup
     }
 
-    /// Reads the raw bytes for ``key``.
+    /// Converts logical value bytes into bytes stored in the Keychain.
+    ///
+    /// Called by ``write(key:accessLevel:data:)`` after validation. The default implementation
+    /// returns ``data`` unchanged.
+    open func transformForWrite(
+        key: String,
+        accessLevel: UUKeychainAccessLevel,
+        data: Data) async -> Result<Data, UUKeychainError>
+    {
+        return .success(data)
+    }
+
+    /// Converts bytes read from the Keychain into logical value bytes.
+    ///
+    /// Called by ``read(key:)`` after a successful Keychain lookup. The default implementation
+    /// returns ``storedData`` unchanged.
+    open func transformForRead(
+        key: String,
+        storedData: Data) async -> Result<Data, UUKeychainError>
+    {
+        return .success(storedData)
+    }
+
+    /// Reads the logical bytes for ``key``.
     public func read(key: String) async -> Result<Data, UUKeychainError>
     {
         if let validationError = validate(key: key)
         {
             return .failure(validationError)
         }
+
+        switch readStoredData(key: key)
+        {
+            case .failure(let error):
+                return .failure(error)
+
+            case .success(let storedData):
+                return await transformForRead(key: key, storedData: storedData)
+        }
+    }
+
+    /// Stores logical ``data`` for ``key``, replacing any existing item.
+    public func write(
+        key: String,
+        accessLevel: UUKeychainAccessLevel,
+        data: Data) async -> UUKeychainError?
+    {
+        if let validationError = validate(key: key)
+        {
+            return validationError
+        }
+
+        guard !data.isEmpty else
+        {
+            return .emptyData
+        }
+
+        let storedData: Data
+
+        switch await transformForWrite(key: key, accessLevel: accessLevel, data: data)
+        {
+            case .success(let transformed):
+                guard !transformed.isEmpty else
+                {
+                    return .emptyData
+                }
+
+                storedData = transformed
+
+            case .failure(let error):
+                return error
+        }
+
+        return writeStoredData(
+            key: key,
+            accessLevel: accessLevel,
+            storedData: storedData)
+    }
+
+    /// Removes the item for ``key``.
+    public func clear(key: String) async -> UUKeychainError?
+    {
+        if let validationError = validate(key: key)
+        {
+            return validationError
+        }
+
+        return deleteStoredData(key: key)
+    }
+
+    // MARK: Private
+
+    private func writeStoredData(
+        key: String,
+        accessLevel: UUKeychainAccessLevel,
+        storedData: Data) -> UUKeychainError?
+    {
+        lock.lock()
+        defer { lock.unlock() }
+
+        let addQuery = writeQuery(key, accessLevel, storedData)
+        var status = SecItemAdd(addQuery, nil)
+
+        if status == errSecDuplicateItem
+        {
+            let matchQuery = commonQuery(key) as CFDictionary
+            let attributesToUpdate: [String: Any] = [
+                kSecValueData as String: storedData,
+                kSecAttrAccessible as String: accessLevel.value,
+            ]
+
+            status = SecItemUpdate(matchQuery, attributesToUpdate as CFDictionary)
+        }
+
+        guard status == errSecSuccess else
+        {
+            return UUKeychainError(status)
+        }
+
+        return nil
+    }
+
+    private func deleteStoredData(key: String) -> UUKeychainError?
+    {
+        lock.lock()
+        defer { lock.unlock() }
+
+        let status = SecItemDelete(clearQuery(key))
+
+        switch status
+        {
+            case errSecSuccess, errSecItemNotFound:
+                return nil
+
+            default:
+                return UUKeychainError(status)
+        }
+    }
+
+    private func readStoredData(key: String) -> Result<Data, UUKeychainError>
+    {
+        lock.lock()
+        defer { lock.unlock() }
 
         let query = readQuery(key)
 
@@ -348,66 +524,6 @@ public actor UUKeychain: UUKeychainProtocol
 
         return .success(data)
     }
-
-    /// Stores ``data`` for ``key``, replacing any existing item.
-    public func write(
-        key: String,
-        accessLevel: UUKeychainAccessLevel,
-        data: Data) async -> UUKeychainError?
-    {
-        if let validationError = validate(key: key)
-        {
-            return validationError
-        }
-
-        guard !data.isEmpty else
-        {
-            return .emptyData
-        }
-
-        let addQuery = writeQuery(key, accessLevel, data)
-        var status = SecItemAdd(addQuery, nil)
-
-        if status == errSecDuplicateItem
-        {
-            let matchQuery = commonQuery(key) as CFDictionary
-            let attributesToUpdate: [String: Any] = [
-                kSecValueData as String: data,
-                kSecAttrAccessible as String: accessLevel.value,
-            ]
-
-            status = SecItemUpdate(matchQuery, attributesToUpdate as CFDictionary)
-        }
-
-        guard status == errSecSuccess else
-        {
-            return UUKeychainError(status)
-        }
-
-        return nil
-    }
-
-    /// Removes the item for ``key``.
-    public func clear(key: String) async -> UUKeychainError?
-    {
-        if let validationError = validate(key: key)
-        {
-            return validationError
-        }
-
-        let status = SecItemDelete(clearQuery(key))
-
-        switch status
-        {
-            case errSecSuccess, errSecItemNotFound:
-                return nil
-
-            default:
-                return UUKeychainError(status)
-        }
-    }
-
-    // MARK: Private
 
     private func validate(key: String) -> UUKeychainError?
     {
@@ -457,6 +573,20 @@ public actor UUKeychain: UUKeychainProtocol
     private func clearQuery(_ key: String) -> CFDictionary
     {
         commonQuery(key) as CFDictionary
+    }
+}
+
+/// Default ``UUKeychainProtocol`` implementation that stores logical bytes unchanged.
+///
+/// Equivalent to ``UUKeychainBase`` with the default identity transform hooks.
+public final class UUKeychain: UUKeychainBase, @unchecked Sendable
+{
+    /// Creates a Keychain accessor for the given service namespace.
+    public override init(
+        serviceIdentifier: String,
+        accessGroup: String? = nil)
+    {
+        super.init(serviceIdentifier: serviceIdentifier, accessGroup: accessGroup)
     }
 }
 

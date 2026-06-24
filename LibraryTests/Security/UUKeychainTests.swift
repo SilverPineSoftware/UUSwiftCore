@@ -46,6 +46,7 @@ final class UUKeychainErrorTests: XCTestCase
         XCTAssertNil(UUKeychainError.emptyData.status)
         XCTAssertNil(UUKeychainError.invalidKey.status)
         XCTAssertNil(UUKeychainError.invalidStringEncoding.status)
+        XCTAssertNil(UUKeychainError.transformFailed(underlying: nil).status)
     }
 
     func test_errorDescription_isNonEmptyForAllCases() async
@@ -60,6 +61,8 @@ final class UUKeychainErrorTests: XCTestCase
             .emptyData,
             .invalidKey,
             .invalidStringEncoding,
+            .transformFailed(underlying: nil),
+            .transformFailed(underlying: NSError(domain: "test", code: 1)),
             .osStatus(-1),
         ]
 
