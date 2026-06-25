@@ -102,14 +102,14 @@ final class UUCryptoErrorTests: XCTestCase
 
 final class UUCryptoValidationTests: XCTestCase
 {
-    private var crypto: UUCrypto!
+    private var crypto: UUDeviceCrypto!
     private var mockKeyStore: MockUUKeyStore!
 
     override func setUp() async throws
     {
         try await super.setUp()
         mockKeyStore = MockUUKeyStore()
-        crypto = UUCrypto(keyAlias: "com.uu.tests.crypto.default", keyStore: mockKeyStore)
+        crypto = UUDeviceCrypto(keyAlias: "com.uu.tests.crypto.default", keyStore: mockKeyStore)
     }
 
     func test_encrypt_returnsNilWithoutCallingKeyStore() async
@@ -169,7 +169,7 @@ final class UUCryptoMockKeyStoreTests: XCTestCase
     private var primaryAlias: String!
     private var secondaryAlias: String!
     private var mockKeyStore: MockUUKeyStore!
-    private var crypto: UUCrypto!
+    private var crypto: UUDeviceCrypto!
 
     override func setUp() async throws
     {
@@ -179,7 +179,7 @@ final class UUCryptoMockKeyStoreTests: XCTestCase
         primaryAlias = KeyStoreTestSupport.qualifiedAlias(namespace: namespace, name: "primary-key")
         secondaryAlias = KeyStoreTestSupport.qualifiedAlias(namespace: namespace, name: "secondary-key")
         mockKeyStore = MockUUKeyStore()
-        crypto = UUCrypto(keyAlias: primaryAlias, keyStore: mockKeyStore)
+        crypto = UUDeviceCrypto(keyAlias: primaryAlias, keyStore: mockKeyStore)
     }
 
     func test_encrypt_propagatesKeyStoreError() async
@@ -259,7 +259,7 @@ final class UUCryptoIntegrationTests: XCTestCase
     private var primaryAlias: String!
     private var secondaryAlias: String!
     private var keyStore: UUDeviceKeyStore!
-    private var crypto: UUCrypto!
+    private var crypto: UUDeviceCrypto!
 
     override func setUp() async throws
     {
@@ -276,7 +276,7 @@ final class UUCryptoIntegrationTests: XCTestCase
         keyStore = UUDeviceKeyStore(
             requireSecureEnclave: false,
             algorithm: KeyStoreTestSupport.defaultAlgorithm())
-        crypto = UUCrypto(keyAlias: primaryAlias, keyStore: keyStore)
+        crypto = UUDeviceCrypto(keyAlias: primaryAlias, keyStore: keyStore)
     }
 
     override func tearDown() async throws
@@ -338,7 +338,7 @@ final class UUCryptoIntegrationTests: XCTestCase
 
     func test_sameAlias_isSharedAcrossCryptoInstances() async throws
     {
-        let otherCrypto = UUCrypto(keyAlias: primaryAlias, keyStore: keyStore)
+        let otherCrypto = UUDeviceCrypto(keyAlias: primaryAlias, keyStore: keyStore)
         let plaintext = Data("shared-crypto-alias".utf8)
 
         let encrypted = try await crypto.encrypt(value: plaintext).get()

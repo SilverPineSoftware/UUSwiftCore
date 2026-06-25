@@ -21,7 +21,7 @@ private enum TestKeys
 
 // MARK: - Mock crypto
 
-private struct PrefixMockCrypto: UUCryptoProtocol
+private struct PrefixMockCrypto: UUCrypto
 {
     private let prefix = Data("enc:".utf8)
 
@@ -61,7 +61,7 @@ private struct PrefixMockCrypto: UUCryptoProtocol
     }
 }
 
-private struct FailingMockCrypto: UUCryptoProtocol
+private struct FailingMockCrypto: UUCrypto
 {
     func encrypt(value: Data?, keyAlias: String) async -> Result<Data?, UUCryptoError>
     {
@@ -263,7 +263,7 @@ final class UUEncryptedKeychainCryptoIntegrationTests: XCTestCase
 
         keychain = UUEncryptedKeychain(
             serviceIdentifier: "com.uu.tests.encrypted-keychain.crypto.\(UUID().uuidString)",
-            crypto: UUCrypto(
+            crypto: UUDeviceCrypto(
                 keyAlias: "com.uu.tests.encrypted-keychain.crypto",
                 keyStore: UUDeviceKeyStore(requireSecureEnclave: false)))
     }

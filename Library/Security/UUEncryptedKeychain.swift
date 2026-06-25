@@ -21,7 +21,7 @@ import Foundation
 
 // MARK: - Implementation
 
-/// ``UUKeychainBase`` that encrypts and decrypts values with an injected ``UUCryptoProtocol``.
+/// ``UUKeychainBase`` that encrypts and decrypts values with an injected ``UUCrypto``.
 ///
 /// Each account ``key`` is passed to ``UUCrypto/encrypt(value:keyAlias:)`` and
 /// ``UUCrypto/decrypt(value:keyAlias:)`` as the per-item ``keyAlias``, so distinct Keychain keys
@@ -39,7 +39,7 @@ import Foundation
 /// ```
 public final class UUEncryptedKeychain: UUKeychainBase, @unchecked Sendable
 {
-    private let crypto: any UUCryptoProtocol
+    private let crypto: any UUCrypto
 
     /// Creates an encrypted Keychain accessor.
     ///
@@ -50,7 +50,7 @@ public final class UUEncryptedKeychain: UUKeychainBase, @unchecked Sendable
     public init(
         serviceIdentifier: String,
         accessGroup: String? = nil,
-        crypto: any UUCryptoProtocol)
+        crypto: any UUCrypto)
     {
         self.crypto = crypto
         super.init(serviceIdentifier: serviceIdentifier, accessGroup: accessGroup)

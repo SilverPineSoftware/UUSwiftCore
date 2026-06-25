@@ -44,7 +44,7 @@ final class UUEncryptedKeychainConnectedTests: XCTestCase
             algorithm: KeyStoreTestSupport.defaultAlgorithm())
         keychain = UUEncryptedKeychain(
             serviceIdentifier: serviceIdentifier,
-            crypto: UUCrypto(keyAlias: primaryKey, keyStore: keyStore))
+            crypto: UUDeviceCrypto(keyAlias: primaryKey, keyStore: keyStore))
         rawKeychain = UUPlainKeychain(serviceIdentifier: serviceIdentifier)
     }
 
@@ -230,7 +230,7 @@ final class UUEncryptedKeychainConnectedTests: XCTestCase
     {
         let otherKeychain = UUEncryptedKeychain(
             serviceIdentifier: serviceIdentifier,
-            crypto: UUCrypto(keyAlias: primaryKey, keyStore: keyStore))
+            crypto: UUDeviceCrypto(keyAlias: primaryKey, keyStore: keyStore))
         let payload = Data("connected-shared-encrypted-keychain".utf8)
 
         let writeError = await keychain.write(

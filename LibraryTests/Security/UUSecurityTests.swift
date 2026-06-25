@@ -44,6 +44,11 @@ final class UUSecurityConfigurationTests: XCTestCase
         XCTAssertTrue(UUSecurity.keychain is UUPlainKeychain)
     }
 
+    func test_crypto_usesDeviceCryptoImplementation() async
+    {
+        XCTAssertTrue(UUSecurity.crypto is UUDeviceCrypto)
+    }
+
     func test_crypto_isBoundToDefaultKeyAlias() async
     {
         XCTAssertEqual(UUSecurity.defaultCryptoKeyAlias, "com.silverpine.uu.core.security.UUCrypto")
@@ -61,7 +66,7 @@ final class UUSecuritySharedKeyStoreTests: XCTestCase
             throw XCTSkip(keychainIntegrationUnavailableMessage)
         }
 
-        let companionCrypto = UUCrypto(
+        let companionCrypto = UUDeviceCrypto(
             keyAlias: UUSecurity.defaultCryptoKeyAlias,
             keyStore: UUSecurity.keyStore)
         let plaintext = Data("security-shared-keystore".utf8)
@@ -128,7 +133,7 @@ final class UUSecurityIntegrationTests: XCTestCase
 
     func test_keyStore_loadKey_succeedsForPerCallAlias() async throws
     {
-        let featureCrypto = UUCrypto(keyAlias: featureAlias, keyStore: UUSecurity.keyStore)
+        let featureCrypto = UUDeviceCrypto(keyAlias: featureAlias, keyStore: UUSecurity.keyStore)
         let plaintext = Data("security-feature-alias".utf8)
 
         let encrypted = try await featureCrypto.encrypt(value: plaintext).get()

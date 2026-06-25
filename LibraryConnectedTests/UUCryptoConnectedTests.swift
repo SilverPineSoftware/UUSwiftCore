@@ -12,13 +12,13 @@ import Security
 import XCTest
 @testable import UUSwiftCore
 
-/// Secure Enclave integration tests for ``UUCrypto``. Run on a physical iOS device with Secure Enclave hardware.
+/// Secure Enclave integration tests for ``UUDeviceCrypto``. Run on a physical iOS device with Secure Enclave hardware.
 final class UUCryptoConnectedTests: XCTestCase
 {
     private var primaryAlias: String!
     private var secondaryAlias: String!
     private var keyStore: UUDeviceKeyStore!
-    private var crypto: UUCrypto!
+    private var crypto: UUDeviceCrypto!
 
     override func setUp() async throws
     {
@@ -35,7 +35,7 @@ final class UUCryptoConnectedTests: XCTestCase
         keyStore = UUDeviceKeyStore(
             requireSecureEnclave: true,
             algorithm: KeyStoreTestSupport.defaultAlgorithm())
-        crypto = UUCrypto(keyAlias: primaryAlias, keyStore: keyStore)
+        crypto = UUDeviceCrypto(keyAlias: primaryAlias, keyStore: keyStore)
     }
 
     override func tearDown() async throws
@@ -99,7 +99,7 @@ final class UUCryptoConnectedTests: XCTestCase
 
     func test_sameAlias_isSharedAcrossCryptoInstances() async throws
     {
-        let otherCrypto = UUCrypto(keyAlias: primaryAlias, keyStore: keyStore)
+        let otherCrypto = UUDeviceCrypto(keyAlias: primaryAlias, keyStore: keyStore)
         let plaintext = Data("connected-shared-crypto".utf8)
 
         let encrypted = try await crypto.encrypt(value: plaintext).get()

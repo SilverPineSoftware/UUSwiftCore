@@ -12,7 +12,7 @@
 //
 //  ``UUSecurity`` exposes static members configured together so EC key material, ECIES encryption,
 //  and generic Keychain storage share consistent defaults. Apps typically call these members directly
-//  rather than creating separate ``UUDeviceKeyStore``, ``UUCrypto``, and ``UUKeychain`` instances.
+//  rather than creating separate ``UUDeviceKeyStore``, ``UUDeviceCrypto``, and ``UUKeychain`` instances.
 //
 
 #if os(iOS) || os(macOS)
@@ -47,7 +47,7 @@ import Foundation
 /// ```
 ///
 /// For feature-specific EC aliases, pass a per-call ``keyAlias`` to
-/// ``UUCrypto/encrypt(value:keyAlias:)`` or create a dedicated ``UUCrypto`` instance that shares
+/// ``UUCrypto/encrypt(value:keyAlias:)`` or create a dedicated ``UUDeviceCrypto`` instance that shares
 /// ``keyStore``. For additional Keychain namespaces, create a separate ``UUPlainKeychain`` with its own
 /// ``UUKeychain/serviceIdentifier``.
 public struct UUSecurity
@@ -70,8 +70,8 @@ public struct UUSecurity
     /// Shared ECIES helper bound to ``defaultCryptoKeyAlias`` and ``keyStore``.
     ///
     /// Delegates key loading to ``keyStore`` on every encrypt and decrypt. ``nil`` and empty
-    /// ``Data`` inputs are passed through unchanged; see ``UUCryptoProtocol``.
-    public static let crypto: UUCrypto = UUCrypto(
+    /// ``Data`` inputs are passed through unchanged; see ``UUCrypto``.
+    public static let crypto: any UUCrypto = UUDeviceCrypto(
         keyAlias: Self.defaultCryptoKeyAlias,
         keyStore: Self.keyStore)
 

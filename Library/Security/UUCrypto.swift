@@ -10,11 +10,10 @@
 //
 //  ECIES encrypt and decrypt helpers for small payloads using device-bound EC keys from a ``UUKeyStore``.
 //
-//  ``UUCryptoProtocol`` defines async encrypt and decrypt operations scoped by key alias.
-//  ``UUCrypto`` implements the protocol as a struct that loads private keys from an injected
+//  ``UUCrypto`` defines async encrypt and decrypt operations scoped by key alias.
+//  ``UUDeviceCrypto`` implements the protocol as a struct that loads private keys from an injected
 //  ``UUKeyStore`` (typically ``UUDeviceKeyStore``). Apps typically expose a shared instance per app
-//  or feature boundary
-//  (for example ``UUSecurity/crypto``).
+//  or feature boundary (for example ``UUSecurity/crypto``).
 //
 
 #if os(iOS) || os(macOS)
@@ -24,7 +23,7 @@ import Security
 
 // MARK: - Errors
 
-/// Errors produced by ``UUCrypto`` and ``UUCryptoProtocol`` implementations.
+/// Errors produced by ``UUCrypto`` and ``UUDeviceCrypto``.
 public enum UUCryptoError: Error, Sendable
 {
     /// ``UUKeyStore/loadKey(alias:)`` failed while resolving the private key for encryption or decryption.
@@ -71,30 +70,30 @@ extension UUCryptoError: LocalizedError
     }
 }
 
-// MARK: - Protocol
+// MARK: - UUCrypto
 
 /// Async ECIES encryption scoped by key alias and backed by ``UUKeyStore``.
 ///
-/// Inject a ``UUCrypto`` instance (or test double) instead of calling Security framework APIs directly.
+/// Inject a ``UUCrypto`` (or test double) instead of calling Security framework APIs directly.
 /// Apps typically define a shared instance:
 ///
 /// ```swift
 /// struct AppCrypto {
-///     static let shared = UUCrypto(
+///     static let shared: any UUCrypto = UUDeviceCrypto(
 ///         keyAlias: "com.example.app.crypto",
 ///         keyStore: AppKeyStore.shared)
 /// }
 /// ```
 ///
 /// ``nil`` and empty ``Data`` inputs are passed through unchanged on both encrypt and decrypt.
-public protocol UUCryptoProtocol: Sendable
+public protocol UUCrypto: Sendable
 {
     /// Encrypts ``value`` with the public key for ``keyAlias``.
     ///
     /// - Parameters:
     ///   - value: Plaintext bytes. ``nil`` and empty data are returned unchanged without touching the key store.
     ///   - keyAlias: Reverse-DNS alias passed to ``UUKeyStore/loadKey(alias:)``. When empty, the
-    ///     instance default from ``UUCrypto/init(keyAlias:keyStore:)`` is used.
+    ///     instance default from ``UUDeviceCrypto/init(keyAlias:keyStore:)`` is used.
     /// - Returns: ECIES ciphertext on success, or a ``UUCryptoError`` on failure.
     func encrypt(value: Data?, keyAlias: String) async -> Result<Data?, UUCryptoError>
 
@@ -104,12 +103,12 @@ public protocol UUCryptoProtocol: Sendable
     ///   - value: Ciphertext produced by ``encrypt(value:keyAlias:)``. ``nil`` and empty data are returned
     ///     unchanged without touching the key store.
     ///   - keyAlias: Reverse-DNS alias passed to ``UUKeyStore/loadKey(alias:)``. When empty, the
-    ///     instance default from ``UUCrypto/init(keyAlias:keyStore:)`` is used.
+    ///     instance default from ``UUDeviceCrypto/init(keyAlias:keyStore:)`` is used.
     /// - Returns: Plaintext bytes on success, or a ``UUCryptoError`` on failure.
     func decrypt(value: Data?, keyAlias: String) async -> Result<Data?, UUCryptoError>
 }
 
-public extension UUCryptoProtocol
+public extension UUCrypto
 {
     /// Encrypts ``value`` using the instance default ``keyAlias``.
     func encrypt(value: Data?) async -> Result<Data?, UUCryptoError>
@@ -124,15 +123,15 @@ public extension UUCryptoProtocol
     }
 }
 
-// MARK: - Implementation
+// MARK: - UUDeviceCrypto
 
-/// Default ``UUCryptoProtocol`` implementation using ``SecKeyCreateEncryptedData`` and
+/// Default ``UUCrypto`` implementation using ``SecKeyCreateEncryptedData`` and
 /// ``SecKeyCreateDecryptedData`` with the algorithm from the injected ``UUKeyStore``.
 ///
 /// Each operation loads (or generates) the private key for the resolved alias, derives the public key,
-/// and performs ECIES using ``UUKeyStore/algorithm``. Ciphertext format is defined by the Security
-/// framework for the configured algorithm (default: variable-IV X9.63 SHA-256 AES-GCM).
-public struct UUCrypto: UUCryptoProtocol
+/// and performs ECIES using the key store's ``algorithm`` property. Ciphertext format is defined by the
+/// Security framework for the configured algorithm (default: variable-IV X9.63 SHA-256 AES-GCM).
+public struct UUDeviceCrypto: UUCrypto
 {
     private let keyAlias: String
     private let keyStore: any UUKeyStore
