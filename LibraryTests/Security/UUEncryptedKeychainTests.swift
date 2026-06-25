@@ -265,7 +265,7 @@ final class UUEncryptedKeychainCryptoIntegrationTests: XCTestCase
             serviceIdentifier: "com.uu.tests.encrypted-keychain.crypto.\(UUID().uuidString)",
             crypto: UUCrypto(
                 keyAlias: "com.uu.tests.encrypted-keychain.crypto",
-                keyStore: UUKeyStore(requireSecureEnclave: false)))
+                keyStore: UUDeviceKeyStore(requireSecureEnclave: false)))
     }
 
     override func tearDown() async throws

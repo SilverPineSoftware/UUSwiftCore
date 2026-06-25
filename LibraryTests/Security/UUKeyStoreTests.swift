@@ -4,6 +4,8 @@
 //
 //  Created by Ryan DeVore on 6/23/26.
 //
+//  Tests for ``UUKeyStore`` and ``UUDeviceKeyStore``.
+//
 
 #if os(iOS) || os(macOS)
 
@@ -142,7 +144,7 @@ final class UUKeyStoreErrorTests: XCTestCase
 
 final class UUKeyStoreValidationTests: XCTestCase
 {
-    private var keyStore: UUKeyStore!
+    private var keyStore: UUDeviceKeyStore!
     private var primaryAlias: String!
     private var secondaryAlias: String!
 
@@ -152,7 +154,7 @@ final class UUKeyStoreValidationTests: XCTestCase
         let namespace = KeyStoreTestSupport.makeNamespace()
         primaryAlias = KeyStoreTestSupport.qualifiedAlias(namespace: namespace, name: "primary-key")
         secondaryAlias = KeyStoreTestSupport.qualifiedAlias(namespace: namespace, name: "secondary-key")
-        keyStore = UUKeyStore(requireSecureEnclave: false)
+        keyStore = UUDeviceKeyStore(requireSecureEnclave: false)
     }
 
     override func tearDown() async throws
@@ -195,7 +197,7 @@ final class UUKeyStoreValidationTests: XCTestCase
             throw XCTSkip("Secure Enclave is available; unavailable-path test applies to Simulator and legacy Mac.")
         }
 
-        let secureStore = UUKeyStore(requireSecureEnclave: true)
+        let secureStore = UUDeviceKeyStore(requireSecureEnclave: true)
         let alias = KeyStoreTestSupport.makeAlias()
 
         let result = await secureStore.loadKey(alias: alias)
@@ -209,7 +211,7 @@ final class UUKeyStoreValidationTests: XCTestCase
 
     func test_loadKey_secureEnclaveRequired_returnsKeySizeNotSupportedForNon256BitKeys() async
     {
-        let secureStore = UUKeyStore(
+        let secureStore = UUDeviceKeyStore(
             keySizeBits: 384,
             requireSecureEnclave: true)
         let alias = KeyStoreTestSupport.makeAlias()
@@ -230,7 +232,7 @@ final class UUKeyStoreIntegrationTests: XCTestCase
 {
     private var primaryAlias: String!
     private var secondaryAlias: String!
-    private var keyStore: UUKeyStore!
+    private var keyStore: UUDeviceKeyStore!
 
     override func setUp() async throws
     {
@@ -244,7 +246,7 @@ final class UUKeyStoreIntegrationTests: XCTestCase
         let namespace = KeyStoreTestSupport.makeNamespace()
         primaryAlias = KeyStoreTestSupport.qualifiedAlias(namespace: namespace, name: "primary-key")
         secondaryAlias = KeyStoreTestSupport.qualifiedAlias(namespace: namespace, name: "secondary-key")
-        keyStore = UUKeyStore(
+        keyStore = UUDeviceKeyStore(
             requireSecureEnclave: false,
             algorithm: KeyStoreTestSupport.defaultAlgorithm())
     }
@@ -327,7 +329,7 @@ final class UUKeyStoreIntegrationTests: XCTestCase
 
     func test_sameAlias_isSharedAcrossKeyStoreInstances() async throws
     {
-        let otherStore = UUKeyStore(requireSecureEnclave: false)
+        let otherStore = UUDeviceKeyStore(requireSecureEnclave: false)
 
         let originalKey = try await keyStore.loadKey(alias: primaryAlias).get()
         let otherKey = try await otherStore.loadKey(alias: primaryAlias).get()
@@ -358,8 +360,8 @@ final class UUKeyStoreIntegrationTests: XCTestCase
     func test_concurrentLoadKeyFromSeparateStores_resolvesDuplicateItem() async throws
     {
         let alias = KeyStoreTestSupport.makeAlias()
-        let storeA = UUKeyStore(requireSecureEnclave: false)
-        let storeB = UUKeyStore(requireSecureEnclave: false)
+        let storeA = UUDeviceKeyStore(requireSecureEnclave: false)
+        let storeB = UUDeviceKeyStore(requireSecureEnclave: false)
 
         defer
         {
@@ -456,7 +458,7 @@ final class UUKeyStoreSecureEnclaveIntegrationTests: XCTestCase
         }
 
         alias = KeyStoreTestSupport.makeAlias()
-        let keyStore = UUKeyStore(
+        let keyStore = UUDeviceKeyStore(
             requireSecureEnclave: true,
             algorithm: KeyStoreTestSupport.defaultAlgorithm())
 

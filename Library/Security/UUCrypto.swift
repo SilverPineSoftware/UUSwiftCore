@@ -8,11 +8,12 @@
 //  This file is part of UUSwiftCore, distributed under the MIT License.
 //  See LICENSE file for details.
 //
-//  ECIES encrypt and decrypt helpers for small payloads using device-bound EC keys from ``UUKeyStore``.
+//  ECIES encrypt and decrypt helpers for small payloads using device-bound EC keys from a ``UUKeyStore``.
 //
 //  ``UUCryptoProtocol`` defines async encrypt and decrypt operations scoped by key alias.
 //  ``UUCrypto`` implements the protocol as a struct that loads private keys from an injected
-//  ``UUKeyStoreProtocol``. Apps typically expose a shared instance per app or feature boundary
+//  ``UUKeyStore`` (typically ``UUDeviceKeyStore``). Apps typically expose a shared instance per app
+//  or feature boundary
 //  (for example ``UUSecurity/crypto``).
 //
 
@@ -72,7 +73,7 @@ extension UUCryptoError: LocalizedError
 
 // MARK: - Protocol
 
-/// Async ECIES encryption scoped by key alias and backed by ``UUKeyStoreProtocol``.
+/// Async ECIES encryption scoped by key alias and backed by ``UUKeyStore``.
 ///
 /// Inject a ``UUCrypto`` instance (or test double) instead of calling Security framework APIs directly.
 /// Apps typically define a shared instance:
@@ -92,7 +93,7 @@ public protocol UUCryptoProtocol: Sendable
     ///
     /// - Parameters:
     ///   - value: Plaintext bytes. ``nil`` and empty data are returned unchanged without touching the key store.
-    ///   - keyAlias: Reverse-DNS alias passed to ``UUKeyStoreProtocol/loadKey(alias:)``. When empty, the
+    ///   - keyAlias: Reverse-DNS alias passed to ``UUKeyStore/loadKey(alias:)``. When empty, the
     ///     instance default from ``UUCrypto/init(keyAlias:keyStore:)`` is used.
     /// - Returns: ECIES ciphertext on success, or a ``UUCryptoError`` on failure.
     func encrypt(value: Data?, keyAlias: String) async -> Result<Data?, UUCryptoError>
@@ -102,7 +103,7 @@ public protocol UUCryptoProtocol: Sendable
     /// - Parameters:
     ///   - value: Ciphertext produced by ``encrypt(value:keyAlias:)``. ``nil`` and empty data are returned
     ///     unchanged without touching the key store.
-    ///   - keyAlias: Reverse-DNS alias passed to ``UUKeyStoreProtocol/loadKey(alias:)``. When empty, the
+    ///   - keyAlias: Reverse-DNS alias passed to ``UUKeyStore/loadKey(alias:)``. When empty, the
     ///     instance default from ``UUCrypto/init(keyAlias:keyStore:)`` is used.
     /// - Returns: Plaintext bytes on success, or a ``UUCryptoError`` on failure.
     func decrypt(value: Data?, keyAlias: String) async -> Result<Data?, UUCryptoError>
@@ -126,7 +127,7 @@ public extension UUCryptoProtocol
 // MARK: - Implementation
 
 /// Default ``UUCryptoProtocol`` implementation using ``SecKeyCreateEncryptedData`` and
-/// ``SecKeyCreateDecryptedData`` with the algorithm from the injected ``UUKeyStoreProtocol``.
+/// ``SecKeyCreateDecryptedData`` with the algorithm from the injected ``UUKeyStore``.
 ///
 /// Each operation loads (or generates) the private key for the resolved alias, derives the public key,
 /// and performs ECIES using ``UUKeyStore/algorithm``. Ciphertext format is defined by the Security
@@ -134,17 +135,17 @@ public extension UUCryptoProtocol
 public struct UUCrypto: UUCryptoProtocol
 {
     private let keyAlias: String
-    private let keyStore: any UUKeyStoreProtocol
+    private let keyStore: any UUKeyStore
     
     /// Creates a crypto helper bound to a default alias and key store.
     ///
     /// - Parameters:
     ///   - keyAlias: Default reverse-DNS alias when ``encrypt(value:keyAlias:)`` or
     ///     ``decrypt(value:keyAlias:)`` is called with an empty ``keyAlias``.
-    ///   - keyStore: Source of private ``SecKey`` references (typically a shared ``UUKeyStore``).
+    ///   - keyStore: Source of private ``SecKey`` references (typically a shared ``UUDeviceKeyStore``).
     public init(
         keyAlias: String,
-        keyStore: any UUKeyStoreProtocol)
+        keyStore: any UUKeyStore)
     {
         self.keyAlias = keyAlias
         self.keyStore = keyStore

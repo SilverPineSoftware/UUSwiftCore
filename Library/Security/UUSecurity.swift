@@ -12,7 +12,7 @@
 //
 //  ``UUSecurity`` exposes static members configured together so EC key material, ECIES encryption,
 //  and generic Keychain storage share consistent defaults. Apps typically call these members directly
-//  rather than creating separate ``UUKeyStore``, ``UUCrypto``, and ``UUKeychain`` instances.
+//  rather than creating separate ``UUDeviceKeyStore``, ``UUCrypto``, and ``UUKeychain`` instances.
 //
 
 #if os(iOS) || os(macOS)
@@ -60,10 +60,10 @@ public struct UUSecurity
 
     /// Shared key store used by ``crypto`` and available for custom ``UUCrypto`` instances.
     ///
-    /// ``UUKeyStoreProtocol/requireSecureEnclave`` is set from ``SecureEnclave/isAvailable`` so
-    /// Simulator and macOS development use Keychain-backed keys while physical iOS devices use
-    /// the Secure Enclave when hardware is present.
-    public static let keyStore: UUKeyStoreProtocol = UUKeyStore(
+    /// Default implementation is ``UUDeviceKeyStore``. ``UUKeyStore/requireSecureEnclave`` is set from
+    /// ``SecureEnclave/isAvailable`` so Simulator and macOS development use Keychain-backed keys while
+    /// physical iOS devices use the Secure Enclave when hardware is present.
+    public static let keyStore: any UUKeyStore = UUDeviceKeyStore(
         requireSecureEnclave: SecureEnclave.isAvailable
     )
 

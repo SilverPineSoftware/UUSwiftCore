@@ -17,7 +17,7 @@ final class UUKeyStoreConnectedTests: XCTestCase
 {
     private var primaryAlias: String!
     private var secondaryAlias: String!
-    private var keyStore: UUKeyStore!
+    private var keyStore: UUDeviceKeyStore!
 
     override func setUp() async throws
     {
@@ -31,7 +31,7 @@ final class UUKeyStoreConnectedTests: XCTestCase
         let namespace = KeyStoreTestSupport.makeNamespace()
         primaryAlias = KeyStoreTestSupport.qualifiedAlias(namespace: namespace, name: "primary-key")
         secondaryAlias = KeyStoreTestSupport.qualifiedAlias(namespace: namespace, name: "secondary-key")
-        keyStore = UUKeyStore(
+        keyStore = UUDeviceKeyStore(
             requireSecureEnclave: true,
             algorithm: KeyStoreTestSupport.defaultAlgorithm())
     }
@@ -139,7 +139,7 @@ final class UUKeyStoreConnectedTests: XCTestCase
 
     func test_sameAlias_isSharedAcrossKeyStoreInstances() async throws
     {
-        let otherStore = UUKeyStore(
+        let otherStore = UUDeviceKeyStore(
             requireSecureEnclave: true,
             algorithm: KeyStoreTestSupport.defaultAlgorithm())
 
@@ -156,10 +156,10 @@ final class UUKeyStoreConnectedTests: XCTestCase
     func test_invalidEntryRecovery_replacesKeychainKeyWithSecureEnclaveKey() async throws
     {
         let alias = KeyStoreTestSupport.makeAlias()
-        let keychainStore = UUKeyStore(
+        let keychainStore = UUDeviceKeyStore(
             requireSecureEnclave: false,
             algorithm: KeyStoreTestSupport.defaultAlgorithm())
-        let secureStore = UUKeyStore(
+        let secureStore = UUDeviceKeyStore(
             requireSecureEnclave: true,
             algorithm: KeyStoreTestSupport.defaultAlgorithm())
 
@@ -186,10 +186,10 @@ final class UUKeyStoreConnectedTests: XCTestCase
     func test_concurrentLoadKeyFromSeparateStores_resolvesDuplicateItem() async throws
     {
         let alias = KeyStoreTestSupport.makeAlias()
-        let storeA = UUKeyStore(
+        let storeA = UUDeviceKeyStore(
             requireSecureEnclave: true,
             algorithm: KeyStoreTestSupport.defaultAlgorithm())
-        let storeB = UUKeyStore(
+        let storeB = UUDeviceKeyStore(
             requireSecureEnclave: true,
             algorithm: KeyStoreTestSupport.defaultAlgorithm())
 

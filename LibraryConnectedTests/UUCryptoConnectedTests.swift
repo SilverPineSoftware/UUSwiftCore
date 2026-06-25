@@ -17,7 +17,7 @@ final class UUCryptoConnectedTests: XCTestCase
 {
     private var primaryAlias: String!
     private var secondaryAlias: String!
-    private var keyStore: UUKeyStore!
+    private var keyStore: UUDeviceKeyStore!
     private var crypto: UUCrypto!
 
     override func setUp() async throws
@@ -32,7 +32,7 @@ final class UUCryptoConnectedTests: XCTestCase
         let namespace = KeyStoreTestSupport.makeNamespace()
         primaryAlias = KeyStoreTestSupport.qualifiedAlias(namespace: namespace, name: "primary-key")
         secondaryAlias = KeyStoreTestSupport.qualifiedAlias(namespace: namespace, name: "secondary-key")
-        keyStore = UUKeyStore(
+        keyStore = UUDeviceKeyStore(
             requireSecureEnclave: true,
             algorithm: KeyStoreTestSupport.defaultAlgorithm())
         crypto = UUCrypto(keyAlias: primaryAlias, keyStore: keyStore)

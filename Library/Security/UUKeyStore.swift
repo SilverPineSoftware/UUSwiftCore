@@ -6,8 +6,8 @@
 //
 //  Async Keychain Services storage for elliptic-curve ``SecKey`` references on iOS and macOS.
 //
-//  ``UUKeyStoreProtocol`` defines scoped load and delete operations for device-bound private keys.
-//  ``UUKeyStore`` implements the protocol as an actor, storing keys under ``kSecAttrApplicationTag``.
+//  ``UUKeyStore`` defines scoped load and delete operations for device-bound private keys.
+//  ``UUDeviceKeyStore`` implements the protocol as an actor, storing keys under ``kSecAttrApplicationTag``.
 //  Apps typically expose a shared instance per app or feature boundary
 //  (for example `AppKeyStore.shared`).
 //
@@ -22,7 +22,7 @@ extension SecKey: @unchecked @retroactive Sendable {}
 
 // MARK: - Errors
 
-/// Errors produced by ``UUKeyStore`` and ``UUKeyStoreProtocol`` implementations.
+/// Errors produced by ``UUKeyStore`` and ``UUDeviceKeyStore``.
 public enum UUKeyStoreError: Error, Sendable
 {
     /// ``loadKey(alias:)`` or ``deleteKey(alias:)`` was called with an empty alias.
@@ -154,11 +154,11 @@ extension UUKeyStoreError: LocalizedError
 }
 
 
-// MARK: - Protocol
+// MARK: - UUKeyStore
 
 /// Async Keychain storage for elliptic-curve private keys identified by alias and optional ``accessGroup``.
 ///
-/// Inject a ``UUKeyStore`` instance (or test double) instead of calling Security framework key APIs
+/// Inject a ``UUKeyStore`` (or test double) instead of calling Security framework key APIs
 /// directly. The alias passed to ``loadKey(alias:)`` is stored as UTF-8 ``kSecAttrApplicationTag``
 /// data (reverse-DNS strings are recommended).
 ///
@@ -166,10 +166,10 @@ extension UUKeyStoreError: LocalizedError
 ///
 /// ```swift
 /// struct AppKeyStore {
-///     static let shared = UUKeyStore()
+///     static let shared: any UUKeyStore = UUDeviceKeyStore()
 /// }
 /// ```
-public protocol UUKeyStoreProtocol: Sendable
+public protocol UUKeyStore: Sendable
 {
     /// Optional Keychain access group for app extensions, mapped to ``kSecAttrAccessGroup``.
     var accessGroup: String? { get }
@@ -197,9 +197,9 @@ public protocol UUKeyStoreProtocol: Sendable
     func deleteKey(alias: String) async -> UUKeyStoreError?
 }
 
-// MARK: - Implementation
+// MARK: - UUDeviceKeyStore
 
-/// Default ``UUKeyStoreProtocol`` implementation backed by Keychain Services ``kSecClassKey`` items.
+/// Default ``UUKeyStore`` implementation backed by Keychain Services ``kSecClassKey`` items.
 ///
 /// Each instance is isolated to an actor so Security framework calls are serialized. Use unique
 /// reverse-DNS aliases to avoid collisions across features or apps.
@@ -207,7 +207,7 @@ public protocol UUKeyStoreProtocol: Sendable
 /// When ``requireSecureEnclave`` is true, keys are created with ``kSecAttrTokenIDSecureEnclave`` and
 /// ``SecAccessControlCreateFlags/privateKeyUsage``. Otherwise keys are stored in the Keychain with
 /// the same ``SecAccessControl`` accessibility model.
-public actor UUKeyStore: UUKeyStoreProtocol
+public actor UUDeviceKeyStore: UUKeyStore
 {
     private static let secureEnclaveKeySizeBits = 256
 
@@ -239,7 +239,7 @@ public actor UUKeyStore: UUKeyStoreProtocol
         self.accessLevel = accessLevel
     }
 
-    // MARK: UUKeyStoreProtocol
+    // MARK: UUKeyStore
 
     /// Loads or generates a private ``SecKey`` stored under ``alias``.
     ///

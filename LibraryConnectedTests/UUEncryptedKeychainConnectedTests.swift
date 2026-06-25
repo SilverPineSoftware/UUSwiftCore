@@ -20,7 +20,7 @@ final class UUEncryptedKeychainConnectedTests: XCTestCase
     private var serviceIdentifier: String!
     private var primaryKey: String!
     private var secondaryKey: String!
-    private var keyStore: UUKeyStore!
+    private var keyStore: UUDeviceKeyStore!
     private var keychain: UUEncryptedKeychain!
     private var rawKeychain: UUKeychain!
 
@@ -39,7 +39,7 @@ final class UUEncryptedKeychainConnectedTests: XCTestCase
             name: "encrypted-keychain-service")
         primaryKey = KeyStoreTestSupport.qualifiedAlias(namespace: namespace, name: "primary-key")
         secondaryKey = KeyStoreTestSupport.qualifiedAlias(namespace: namespace, name: "secondary-key")
-        keyStore = UUKeyStore(
+        keyStore = UUDeviceKeyStore(
             requireSecureEnclave: true,
             algorithm: KeyStoreTestSupport.defaultAlgorithm())
         keychain = UUEncryptedKeychain(

@@ -140,7 +140,7 @@ enum KeyStoreTestSupport
     static func isKeychainAccessible() async -> Bool
     {
         let alias = makeAlias()
-        let store = UUKeyStore(requireSecureEnclave: false)
+        let store = UUDeviceKeyStore(requireSecureEnclave: false)
 
         switch await store.loadKey(alias: alias)
         {
