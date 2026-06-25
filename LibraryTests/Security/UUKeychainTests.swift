@@ -187,7 +187,7 @@ final class UUKeychainMockTests: XCTestCase
 {
     func test_mockKeychain_readWriteClear() async
     {
-        let mock = MockKeychain()
+        let mock = MockUUKeychain()
 
         let writeError = await mock.write(
             key: "token",
@@ -211,7 +211,7 @@ final class UUKeychainMockTests: XCTestCase
 
     func test_mockKeychain_writeOverwritesExistingValue() async
     {
-        let mock = MockKeychain()
+        let mock = MockUUKeychain()
 
         let firstWriteError = await mock.write(
             key: TestKeys.primary,
@@ -231,7 +231,7 @@ final class UUKeychainMockTests: XCTestCase
 
     func test_mockKeychain_clear_isIdempotentWhenItemIsMissing() async
     {
-        let mock = MockKeychain()
+        let mock = MockUUKeychain()
         let clearError = await mock.clear(key: TestKeys.primary)
         XCTAssertNil(clearError)
     }
@@ -240,8 +240,8 @@ final class UUKeychainMockTests: XCTestCase
     {
         let serviceA = "mock.service.a"
         let serviceB = "mock.service.b"
-        let keychainA = MockKeychain(serviceIdentifier: serviceA)
-        let keychainB = MockKeychain(serviceIdentifier: serviceB)
+        let keychainA = MockUUKeychain(serviceIdentifier: serviceA)
+        let keychainB = MockUUKeychain(serviceIdentifier: serviceB)
 
         let writeError = await keychainA.write(
             key: TestKeys.primary,
@@ -260,7 +260,7 @@ final class UUKeychainMockTests: XCTestCase
 
     func test_mockKeychain_writeStringUsesProtocolExtension() async
     {
-        let mock = MockKeychain()
+        let mock = MockUUKeychain()
 
         let writeError = await mock.writeString(
             key: "name",
@@ -274,7 +274,7 @@ final class UUKeychainMockTests: XCTestCase
 
     func test_mockKeychain_writeString_overwritesExistingValue() async
     {
-        let mock = MockKeychain()
+        let mock = MockUUKeychain()
 
         let firstWriteError = await mock.writeString(
             key: TestKeys.primary,
@@ -294,7 +294,7 @@ final class UUKeychainMockTests: XCTestCase
 
     func test_mockKeychain_readString_roundTripsWithCustomEncoding() async
     {
-        let mock = MockKeychain()
+        let mock = MockUUKeychain()
         let value = "héllo"
 
         let writeError = await mock.writeString(
@@ -310,7 +310,7 @@ final class UUKeychainMockTests: XCTestCase
 
     func test_mockKeychain_readString_returnsNotFoundForMissingKey() async
     {
-        let mock = MockKeychain()
+        let mock = MockUUKeychain()
         let result = await mock.readString(key: TestKeys.primary)
 
         guard case .failure(.notFound) = result else
@@ -322,7 +322,7 @@ final class UUKeychainMockTests: XCTestCase
 
     func test_mockKeychain_readString_returnsInvalidKeyForEmptyKey() async
     {
-        let mock = MockKeychain()
+        let mock = MockUUKeychain()
         let result = await mock.readString(key: "")
 
         guard case .failure(.invalidKey) = result else
@@ -334,7 +334,7 @@ final class UUKeychainMockTests: XCTestCase
 
     func test_mockKeychain_readString_returnsUnexpectedDataForInvalidUTF8() async
     {
-        let mock = MockKeychain()
+        let mock = MockUUKeychain()
 
         let writeError = await mock.write(
             key: TestKeys.primary,
@@ -353,7 +353,7 @@ final class UUKeychainMockTests: XCTestCase
 
     func test_mockKeychain_writeString_returnsInvalidStringEncoding() async
     {
-        let mock = MockKeychain()
+        let mock = MockUUKeychain()
 
         let error = await mock.writeString(
             key: TestKeys.primary,
@@ -368,8 +368,8 @@ final class UUKeychainMockTests: XCTestCase
     {
         let group = "group.shared"
         let service = "mock.service.shared"
-        let writer = MockKeychain(serviceIdentifier: service, accessGroup: group)
-        let reader = MockKeychain(serviceIdentifier: service, accessGroup: group)
+        let writer = MockUUKeychain(serviceIdentifier: service, accessGroup: group)
+        let reader = MockUUKeychain(serviceIdentifier: service, accessGroup: group)
 
         let writeError = await writer.write(
             key: TestKeys.primary,
@@ -384,8 +384,8 @@ final class UUKeychainMockTests: XCTestCase
     func test_mockKeychain_itemsAreIsolatedByAccessGroup() async
     {
         let service = "mock.service.isolated"
-        let grouped = MockKeychain(serviceIdentifier: service, accessGroup: "group.a")
-        let otherGroup = MockKeychain(serviceIdentifier: service, accessGroup: "group.b")
+        let grouped = MockUUKeychain(serviceIdentifier: service, accessGroup: "group.a")
+        let otherGroup = MockUUKeychain(serviceIdentifier: service, accessGroup: "group.b")
 
         let writeError = await grouped.write(
             key: TestKeys.primary,
@@ -411,9 +411,9 @@ private enum TestKeys
     static let secondary = "secondary-key"
 }
 
-private actor MockKeychainStore
+private actor MockUUKeychainStore
 {
-    static let shared = MockKeychainStore()
+    static let shared = MockUUKeychainStore()
 
     private var storage: [String: Data] = [:]
 
@@ -433,7 +433,7 @@ private actor MockKeychainStore
     }
 }
 
-private actor MockKeychain: UUKeychain
+private actor MockUUKeychain: UUKeychain
 {
     let serviceIdentifier: String
     let accessGroup: String?
@@ -456,7 +456,7 @@ private actor MockKeychain: UUKeychain
             return .failure(.invalidKey)
         }
 
-        guard let data = await MockKeychainStore.shared.read(key: storageKey(key)) else
+        guard let data = await MockUUKeychainStore.shared.read(key: storageKey(key)) else
         {
             return .failure(.notFound)
         }
@@ -476,7 +476,7 @@ private actor MockKeychain: UUKeychain
             return .emptyData
         }
 
-        await MockKeychainStore.shared.write(key: storageKey(key), data: data)
+        await MockUUKeychainStore.shared.write(key: storageKey(key), data: data)
         return nil
     }
 
@@ -487,7 +487,7 @@ private actor MockKeychain: UUKeychain
             return .invalidKey
         }
 
-        await MockKeychainStore.shared.clear(key: storageKey(key))
+        await MockUUKeychainStore.shared.clear(key: storageKey(key))
         return nil
     }
 }

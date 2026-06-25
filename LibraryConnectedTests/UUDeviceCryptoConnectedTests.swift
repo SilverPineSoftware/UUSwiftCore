@@ -1,5 +1,5 @@
 //
-//  UUCryptoConnectedTests.swift
+//  UUDeviceCryptoConnectedTests.swift
 //  LibraryConnectedTests
 //
 //  Created by Ryan DeVore on 6/23/26.
@@ -13,7 +13,7 @@ import XCTest
 @testable import UUSwiftCore
 
 /// Secure Enclave integration tests for ``UUDeviceCrypto``. Run on a physical iOS device with Secure Enclave hardware.
-final class UUCryptoConnectedTests: XCTestCase
+final class UUDeviceCryptoConnectedTests: XCTestCase
 {
     private var primaryAlias: String!
     private var secondaryAlias: String!

@@ -12,7 +12,7 @@
 //
 //  ``UUSecurity`` exposes static members configured together so EC key material, ECIES encryption,
 //  and generic Keychain storage share consistent defaults. Apps typically call these members directly
-//  rather than creating separate ``UUDeviceKeyStore``, ``UUDeviceCrypto``, and ``UUKeychain`` instances.
+//  rather than creating separate ``UUDeviceKeyStore``, ``UUDeviceCrypto``, and ``UUPlainKeychain`` instances.
 //
 
 #if os(iOS) || os(macOS)
@@ -58,7 +58,7 @@ public struct UUSecurity
     /// Service namespace passed to ``UUPlainKeychain/init(serviceIdentifier:accessGroup:)`` for ``keychain``.
     internal static let keychainServiceIdentifier = "com.silverpine.uu.core.security.UUKeychain"
 
-    /// Shared key store used by ``crypto`` and available for custom ``UUCrypto`` instances.
+    /// Shared key store used by ``crypto`` and available for custom ``UUDeviceCrypto`` instances.
     ///
     /// Default implementation is ``UUDeviceKeyStore``. ``UUKeyStore/requireSecureEnclave`` is set from
     /// ``SecureEnclave/isAvailable`` so Simulator and macOS development use Keychain-backed keys while

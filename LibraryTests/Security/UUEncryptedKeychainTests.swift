@@ -21,7 +21,7 @@ private enum TestKeys
 
 // MARK: - Mock crypto
 
-private struct PrefixMockCrypto: UUCrypto
+private struct MockUUCryptoPrefix: UUCrypto
 {
     private let prefix = Data("enc:".utf8)
 
@@ -61,7 +61,7 @@ private struct PrefixMockCrypto: UUCrypto
     }
 }
 
-private struct FailingMockCrypto: UUCrypto
+private struct MockUUCryptoFailing: UUCrypto
 {
     func encrypt(value: Data?, keyAlias: String) async -> Result<Data?, UUCryptoError>
     {
@@ -85,7 +85,7 @@ final class UUEncryptedKeychainTransformTests: XCTestCase
         try await super.setUp()
         keychain = UUEncryptedKeychain(
             serviceIdentifier: "com.uu.tests.encrypted-keychain.\(UUID().uuidString)",
-            crypto: PrefixMockCrypto())
+            crypto: MockUUCryptoPrefix())
     }
 
     func test_transformForWrite_encryptsLogicalData() async
@@ -113,7 +113,7 @@ final class UUEncryptedKeychainTransformTests: XCTestCase
     {
         let failingKeychain = UUEncryptedKeychain(
             serviceIdentifier: "com.uu.tests.encrypted-keychain.fail.\(UUID().uuidString)",
-            crypto: FailingMockCrypto())
+            crypto: MockUUCryptoFailing())
 
         let error = await failingKeychain.write(
             key: TestKeys.primary,
@@ -178,7 +178,7 @@ final class UUEncryptedKeychainIntegrationTests: XCTestCase
         let serviceIdentifier = "com.uu.tests.encrypted-keychain.integration.\(UUID().uuidString)"
         keychain = UUEncryptedKeychain(
             serviceIdentifier: serviceIdentifier,
-            crypto: PrefixMockCrypto())
+            crypto: MockUUCryptoPrefix())
         rawKeychain = UUPlainKeychain(serviceIdentifier: serviceIdentifier)
     }
 
