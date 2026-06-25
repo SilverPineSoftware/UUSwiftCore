@@ -114,7 +114,7 @@ final class UUCryptoValidationTests: XCTestCase
 
     func test_encrypt_returnsNilWithoutCallingKeyStore() async
     {
-        let result = await crypto.encrypt(value: nil)
+        let result = await crypto.deviceEncrypt(value: nil)
 
         XCTAssertNil(try? result.get())
         let callCount = await mockKeyStore.loadKeyCallCount
@@ -124,7 +124,7 @@ final class UUCryptoValidationTests: XCTestCase
     func test_encrypt_returnsEmptyWithoutCallingKeyStore() async
     {
         let empty = Data()
-        let result = await crypto.encrypt(value: empty)
+        let result = await crypto.deviceEncrypt(value: empty)
 
         XCTAssertEqual(try? result.get(), empty)
         let callCount = await mockKeyStore.loadKeyCallCount
@@ -133,7 +133,7 @@ final class UUCryptoValidationTests: XCTestCase
 
     func test_decrypt_returnsNilWithoutCallingKeyStore() async
     {
-        let result = await crypto.decrypt(value: nil)
+        let result = await crypto.deviceDecrypt(value: nil)
 
         XCTAssertNil(try? result.get())
         let callCount = await mockKeyStore.loadKeyCallCount
@@ -143,7 +143,7 @@ final class UUCryptoValidationTests: XCTestCase
     func test_decrypt_returnsEmptyWithoutCallingKeyStore() async
     {
         let empty = Data()
-        let result = await crypto.decrypt(value: empty)
+        let result = await crypto.deviceDecrypt(value: empty)
 
         XCTAssertEqual(try? result.get(), empty)
         let callCount = await mockKeyStore.loadKeyCallCount
@@ -153,8 +153,8 @@ final class UUCryptoValidationTests: XCTestCase
     func test_protocolExtension_usesInstanceDefaultAlias() async throws
     {
         let plaintext = Data("protocol-default-alias".utf8)
-        let encrypted = try await crypto.encrypt(value: plaintext).get()
-        let decrypted = try await crypto.decrypt(value: encrypted).get()
+        let encrypted = try await crypto.deviceEncrypt(value: plaintext).get()
+        let decrypted = try await crypto.deviceDecrypt(value: encrypted).get()
 
         XCTAssertEqual(decrypted, plaintext)
         let loadedAlias = await mockKeyStore.lastLoadedAlias
@@ -186,7 +186,7 @@ final class UUCryptoMockKeyStoreTests: XCTestCase
     {
         await mockKeyStore.setLoadKeyResult(.failure(.invalidAlias))
 
-        let result = await crypto.encrypt(value: Data("secret".utf8))
+        let result = await crypto.deviceEncrypt(value: Data("secret".utf8))
 
         XCTAssertCryptoError(result, .keyStoreInvalidAlias)
     }
@@ -195,7 +195,7 @@ final class UUCryptoMockKeyStoreTests: XCTestCase
     {
         await mockKeyStore.setLoadKeyResult(.failure(.notFound))
 
-        let result = await crypto.decrypt(value: Data([0x01, 0x02, 0x03]))
+        let result = await crypto.deviceDecrypt(value: Data([0x01, 0x02, 0x03]))
 
         XCTAssertCryptoError(result, .keyStoreNotFound)
     }
@@ -203,8 +203,8 @@ final class UUCryptoMockKeyStoreTests: XCTestCase
     func test_encryptAndDecrypt_roundTrip_succeeds() async throws
     {
         let plaintext = Data("Hello, world!".utf8)
-        let encrypted = try await crypto.encrypt(value: plaintext).get()
-        let decrypted = try await crypto.decrypt(value: encrypted).get()
+        let encrypted = try await crypto.deviceEncrypt(value: plaintext).get()
+        let decrypted = try await crypto.deviceDecrypt(value: encrypted).get()
 
         XCTAssertNotNil(encrypted)
         XCTAssertFalse(encrypted!.isEmpty)
@@ -214,22 +214,22 @@ final class UUCryptoMockKeyStoreTests: XCTestCase
     func test_encrypt_producesDifferentCiphertextForSamePlaintext() async throws
     {
         let plaintext = Data("non-deterministic-iv".utf8)
-        let first = try await crypto.encrypt(value: plaintext).get()
-        let second = try await crypto.encrypt(value: plaintext).get()
+        let first = try await crypto.deviceEncrypt(value: plaintext).get()
+        let second = try await crypto.deviceEncrypt(value: plaintext).get()
 
         XCTAssertNotEqual(first, second)
 
-        let decryptedFirst = try await crypto.decrypt(value: first).get()
-        let decryptedSecond = try await crypto.decrypt(value: second).get()
+        let decryptedFirst = try await crypto.deviceDecrypt(value: first).get()
+        let decryptedSecond = try await crypto.deviceDecrypt(value: second).get()
         XCTAssertEqual(decryptedFirst, plaintext)
         XCTAssertEqual(decryptedSecond, plaintext)
     }
 
     func test_decrypt_malformedCiphertext_returnsFailure() async throws
     {
-        _ = try await crypto.encrypt(value: Data("warm-up".utf8)).get()
+        _ = try await crypto.deviceEncrypt(value: Data("warm-up".utf8)).get()
 
-        let result = await crypto.decrypt(value: Data([0x01, 0x02, 0x03]))
+        let result = await crypto.deviceDecrypt(value: Data([0x01, 0x02, 0x03]))
 
         XCTAssertCryptoError(result, .decryptionFailed)
     }
@@ -239,15 +239,15 @@ final class UUCryptoMockKeyStoreTests: XCTestCase
         let plaintextA = Data("alpha".utf8)
         let plaintextB = Data("beta".utf8)
 
-        let encryptedA = try await crypto.encrypt(value: plaintextA, keyAlias: primaryAlias).get()
-        let encryptedB = try await crypto.encrypt(value: plaintextB, keyAlias: secondaryAlias).get()
+        let encryptedA = try await crypto.deviceEncrypt(value: plaintextA, keyAlias: primaryAlias).get()
+        let encryptedB = try await crypto.deviceEncrypt(value: plaintextB, keyAlias: secondaryAlias).get()
 
-        let decryptedA = try await crypto.decrypt(value: encryptedA, keyAlias: primaryAlias).get()
-        let decryptedB = try await crypto.decrypt(value: encryptedB, keyAlias: secondaryAlias).get()
+        let decryptedA = try await crypto.deviceDecrypt(value: encryptedA, keyAlias: primaryAlias).get()
+        let decryptedB = try await crypto.deviceDecrypt(value: encryptedB, keyAlias: secondaryAlias).get()
         XCTAssertEqual(decryptedA, plaintextA)
         XCTAssertEqual(decryptedB, plaintextB)
 
-        let wrongKeyResult = await crypto.decrypt(value: encryptedA, keyAlias: secondaryAlias)
+        let wrongKeyResult = await crypto.deviceDecrypt(value: encryptedA, keyAlias: secondaryAlias)
         XCTAssertCryptoError(wrongKeyResult, .decryptionFailed)
     }
 }
@@ -301,8 +301,8 @@ final class UUCryptoIntegrationTests: XCTestCase
     func test_encryptAndDecrypt_roundTrip_succeeds() async throws
     {
         let plaintext = Data("crypto-integration-round-trip".utf8)
-        let encrypted = try await crypto.encrypt(value: plaintext).get()
-        let decrypted = try await crypto.decrypt(value: encrypted).get()
+        let encrypted = try await crypto.deviceEncrypt(value: plaintext).get()
+        let decrypted = try await crypto.deviceDecrypt(value: encrypted).get()
 
         XCTAssertNotNil(encrypted)
         XCTAssertEqual(decrypted, plaintext)
@@ -310,14 +310,14 @@ final class UUCryptoIntegrationTests: XCTestCase
 
     func test_nullAndEmptyInputs_passthrough() async throws
     {
-        let encryptedNil = try await crypto.encrypt(value: nil).get()
-        let decryptedNil = try await crypto.decrypt(value: nil).get()
+        let encryptedNil = try await crypto.deviceEncrypt(value: nil).get()
+        let decryptedNil = try await crypto.deviceDecrypt(value: nil).get()
         XCTAssertNil(encryptedNil)
         XCTAssertNil(decryptedNil)
 
         let empty = Data()
-        let encryptedEmpty = try await crypto.encrypt(value: empty).get()
-        let decryptedEmpty = try await crypto.decrypt(value: empty).get()
+        let encryptedEmpty = try await crypto.deviceEncrypt(value: empty).get()
+        let decryptedEmpty = try await crypto.deviceDecrypt(value: empty).get()
         XCTAssertEqual(encryptedEmpty, empty)
         XCTAssertEqual(decryptedEmpty, empty)
     }
@@ -327,11 +327,11 @@ final class UUCryptoIntegrationTests: XCTestCase
         let plaintextA = Data("integration-alpha".utf8)
         let plaintextB = Data("integration-beta".utf8)
 
-        let encryptedA = try await crypto.encrypt(value: plaintextA, keyAlias: primaryAlias).get()
-        let encryptedB = try await crypto.encrypt(value: plaintextB, keyAlias: secondaryAlias).get()
+        let encryptedA = try await crypto.deviceEncrypt(value: plaintextA, keyAlias: primaryAlias).get()
+        let encryptedB = try await crypto.deviceEncrypt(value: plaintextB, keyAlias: secondaryAlias).get()
 
-        let decryptedA = try await crypto.decrypt(value: encryptedA, keyAlias: primaryAlias).get()
-        let decryptedB = try await crypto.decrypt(value: encryptedB, keyAlias: secondaryAlias).get()
+        let decryptedA = try await crypto.deviceDecrypt(value: encryptedA, keyAlias: primaryAlias).get()
+        let decryptedB = try await crypto.deviceDecrypt(value: encryptedB, keyAlias: secondaryAlias).get()
         XCTAssertEqual(decryptedA, plaintextA)
         XCTAssertEqual(decryptedB, plaintextB)
     }
@@ -341,8 +341,8 @@ final class UUCryptoIntegrationTests: XCTestCase
         let otherCrypto = UUDeviceCrypto(keyAlias: primaryAlias, keyStore: keyStore)
         let plaintext = Data("shared-crypto-alias".utf8)
 
-        let encrypted = try await crypto.encrypt(value: plaintext).get()
-        let decrypted = try await otherCrypto.decrypt(value: encrypted).get()
+        let encrypted = try await crypto.deviceEncrypt(value: plaintext).get()
+        let decrypted = try await otherCrypto.deviceDecrypt(value: encrypted).get()
 
         XCTAssertEqual(decrypted, plaintext)
     }

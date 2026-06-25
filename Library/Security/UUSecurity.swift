@@ -10,7 +10,7 @@
 //
 //  Shared security facade wiring one ``UUKeyStore``, ``UUCrypto``, and ``UUKeychain`` for app-wide use.
 //
-//  ``UUSecurity`` exposes static members configured together so EC key material, ECIES encryption,
+//  ``UUSecurity`` exposes static members configured together so EC key material, device-bound encryption,
 //  and generic Keychain storage share consistent defaults. Apps typically call these members directly
 //  rather than creating separate ``UUDeviceKeyStore``, ``UUDeviceCrypto``, and ``UUPlainKeychain`` instances.
 //
@@ -22,22 +22,22 @@ import Foundation
 
 // MARK: - Facade
 
-/// Shared security services for device-bound keys, ECIES encryption, and Keychain storage.
+/// Shared security services for device-bound keys, device-specific encryption, and Keychain storage.
 ///
 /// Three capabilities are wired at launch:
 ///
 /// - ``keyStore`` — loads or generates P-256 private ``SecKey`` references (Secure Enclave when available).
-/// - ``crypto`` — encrypts and decrypts small payloads with ECIES via ``keyStore``.
+/// - ``crypto`` — device-encrypts and device-decrypts small payloads via hardware-backed keys in ``keyStore``.
 /// - ``keychain`` — stores generic passwords (tokens, credentials) under a fixed service namespace.
 ///
 /// Use ``crypto`` when ciphertext must be bound to a device key pair. Use ``keychain`` when you need
-/// to persist opaque bytes or strings that are not ECIES-wrapped. Both are independent; neither
+/// to persist opaque bytes or strings that are not device-encrypted. Both are independent; neither
 /// replaces the other.
 ///
 /// ```swift
-/// // ECIES via the shared EC key
-/// let encrypted = await UUSecurity.crypto.encrypt(value: plaintext)
-/// let decrypted = await UUSecurity.crypto.decrypt(value: try encrypted.get())
+/// // Device-bound encryption via the shared EC key
+/// let encrypted = await UUSecurity.crypto.deviceEncrypt(value: plaintext)
+/// let decrypted = await UUSecurity.crypto.deviceDecrypt(value: try encrypted.get())
 ///
 /// // Generic password in Keychain
 /// _ = await UUSecurity.keychain.write(
@@ -47,7 +47,7 @@ import Foundation
 /// ```
 ///
 /// For feature-specific EC aliases, pass a per-call ``keyAlias`` to
-/// ``UUCrypto/encrypt(value:keyAlias:)`` or create a dedicated ``UUDeviceCrypto`` instance that shares
+/// ``UUCrypto/deviceEncrypt(value:keyAlias:)`` or create a dedicated ``UUDeviceCrypto`` instance that shares
 /// ``keyStore``. For additional Keychain namespaces, create a separate ``UUPlainKeychain`` with its own
 /// ``UUKeychain/serviceIdentifier``.
 public struct UUSecurity
@@ -67,9 +67,9 @@ public struct UUSecurity
         requireSecureEnclave: SecureEnclave.isAvailable
     )
 
-    /// Shared ECIES helper bound to ``defaultCryptoKeyAlias`` and ``keyStore``.
+    /// Shared device-crypto helper bound to ``defaultCryptoKeyAlias`` and ``keyStore``.
     ///
-    /// Delegates key loading to ``keyStore`` on every encrypt and decrypt. ``nil`` and empty
+    /// Delegates key loading to ``keyStore`` on every device encrypt and decrypt. ``nil`` and empty
     /// ``Data`` inputs are passed through unchanged; see ``UUCrypto``.
     public static let crypto: any UUCrypto = UUDeviceCrypto(
         keyAlias: Self.defaultCryptoKeyAlias,

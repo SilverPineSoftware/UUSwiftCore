@@ -11,7 +11,7 @@
 //  Keychain storage that encrypts logical values with ``UUCrypto`` before persistence.
 //
 //  ``UUEncryptedKeychain`` subclasses ``UUKeychainBase`` and overrides the transform hooks to
-//  ECIES-encrypt on write and decrypt on read. The Keychain therefore holds ciphertext while callers
+//  device-encrypt on write and device-decrypt on read. The Keychain therefore holds ciphertext while callers
 //  of ``UUKeychain/read(key:)`` and ``write(key:accessLevel:data:)`` work with plaintext.
 //
 
@@ -23,8 +23,8 @@ import Foundation
 
 /// ``UUKeychainBase`` that encrypts and decrypts values with an injected ``UUCrypto``.
 ///
-/// Each account ``key`` is passed to ``UUCrypto/encrypt(value:keyAlias:)`` and
-/// ``UUCrypto/decrypt(value:keyAlias:)`` as the per-item ``keyAlias``, so distinct Keychain keys
+/// Each account ``key`` is passed to ``UUCrypto/deviceEncrypt(value:keyAlias:)`` and
+/// ``UUCrypto/deviceDecrypt(value:keyAlias:)`` as the per-item ``keyAlias``, so distinct Keychain keys
 /// resolve distinct EC key material when using the default ``UUSecurity/crypto`` configuration.
 ///
 /// ```swift
@@ -46,7 +46,7 @@ public final class UUEncryptedKeychain: UUKeychainBase, @unchecked Sendable
     /// - Parameters:
     ///   - serviceIdentifier: Value stored in ``kSecAttrService`` for all items.
     ///   - accessGroup: Optional ``kSecAttrAccessGroup`` for shared access with extensions.
-    ///   - crypto: ECIES helper used to transform logical bytes before storage.
+    ///   - crypto: Device-crypto helper used to transform logical bytes before storage.
     public init(
         serviceIdentifier: String,
         accessGroup: String? = nil,
@@ -61,7 +61,7 @@ public final class UUEncryptedKeychain: UUKeychainBase, @unchecked Sendable
         accessLevel: UUKeychainAccessLevel,
         data: Data) async -> Result<Data, UUKeychainError>
     {
-        switch await crypto.encrypt(value: data, keyAlias: key)
+        switch await crypto.deviceEncrypt(value: data, keyAlias: key)
         {
             case .success(let encrypted):
                 guard let encrypted else
@@ -85,7 +85,7 @@ public final class UUEncryptedKeychain: UUKeychainBase, @unchecked Sendable
         key: String,
         storedData: Data) async -> Result<Data, UUKeychainError>
     {
-        switch await crypto.decrypt(value: storedData, keyAlias: key)
+        switch await crypto.deviceDecrypt(value: storedData, keyAlias: key)
         {
             case .success(let decrypted):
                 guard let decrypted else

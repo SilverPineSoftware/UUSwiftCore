@@ -8,12 +8,13 @@
 //  This file is part of UUSwiftCore, distributed under the MIT License.
 //  See LICENSE file for details.
 //
-//  ECIES encrypt and decrypt helpers for small payloads using device-bound EC keys from a ``UUKeyStore``.
+//  Device-specific encrypt and decrypt helpers for small payloads using hardware-backed
+//  public/private keys from a ``UUKeyStore``.
 //
-//  ``UUCrypto`` defines async encrypt and decrypt operations scoped by key alias.
-//  ``UUDeviceCrypto`` implements the protocol as a struct that loads private keys from an injected
-//  ``UUKeyStore`` (typically ``UUDeviceKeyStore``). Apps typically expose a shared instance per app
-//  or feature boundary (for example ``UUSecurity/crypto``).
+//  ``UUCrypto`` defines async ``deviceEncrypt(value:keyAlias:)`` and ``deviceDecrypt(value:keyAlias:)``
+//  operations scoped by key alias. ``UUDeviceCrypto`` implements the protocol as a struct that loads
+//  keys from an injected ``UUKeyStore`` (typically ``UUDeviceKeyStore``). Apps typically expose a shared
+//  instance per app or feature boundary (for example ``UUSecurity/crypto``).
 //
 
 #if os(iOS) || os(macOS)
@@ -23,7 +24,11 @@ import Security
 
 // MARK: - UUCrypto
 
-/// Async ECIES encryption scoped by key alias and backed by ``UUKeyStore``.
+/// Device-specific encryption scoped by key alias and backed by ``UUKeyStore``.
+///
+/// Ciphertext is bound to keys stored on the current device (Secure Enclave or Keychain). Encryption uses
+/// the public key derived from the device key pair; decryption uses the matching private key. This API
+/// is intended for on-device secrets, not cross-platform wire formats.
 ///
 /// Inject a ``UUCrypto`` (or test double) instead of calling Security framework APIs directly.
 /// Apps typically define a shared instance:
@@ -36,52 +41,52 @@ import Security
 /// }
 /// ```
 ///
-/// ``nil`` and empty ``Data`` inputs are passed through unchanged on both encrypt and decrypt.
+/// ``nil`` and empty ``Data`` inputs are passed through unchanged on both device encrypt and decrypt.
 public protocol UUCrypto: Sendable
 {
-    /// Encrypts ``value`` with the public key for ``keyAlias``.
+    /// Encrypts ``value`` for the device key pair identified by ``keyAlias``.
     ///
     /// - Parameters:
     ///   - value: Plaintext bytes. ``nil`` and empty data are returned unchanged without touching the key store.
     ///   - keyAlias: Reverse-DNS alias passed to ``UUKeyStore/loadKey(alias:)``. When empty, the
     ///     instance default from ``UUDeviceCrypto/init(keyAlias:keyStore:)`` is used.
-    /// - Returns: ECIES ciphertext on success, or a ``UUCryptoError`` on failure.
-    func encrypt(value: Data?, keyAlias: String) async -> Result<Data?, UUCryptoError>
+    /// - Returns: Device-bound ciphertext on success, or a ``UUCryptoError`` on failure.
+    func deviceEncrypt(value: Data?, keyAlias: String) async -> Result<Data?, UUCryptoError>
 
-    /// Decrypts ``value`` with the private key for ``keyAlias``.
+    /// Decrypts ``value`` with the device private key for ``keyAlias``.
     ///
     /// - Parameters:
-    ///   - value: Ciphertext produced by ``encrypt(value:keyAlias:)``. ``nil`` and empty data are returned
-    ///     unchanged without touching the key store.
+    ///   - value: Ciphertext produced by ``deviceEncrypt(value:keyAlias:)``. ``nil`` and empty data are
+    ///     returned unchanged without touching the key store.
     ///   - keyAlias: Reverse-DNS alias passed to ``UUKeyStore/loadKey(alias:)``. When empty, the
     ///     instance default from ``UUDeviceCrypto/init(keyAlias:keyStore:)`` is used.
     /// - Returns: Plaintext bytes on success, or a ``UUCryptoError`` on failure.
-    func decrypt(value: Data?, keyAlias: String) async -> Result<Data?, UUCryptoError>
+    func deviceDecrypt(value: Data?, keyAlias: String) async -> Result<Data?, UUCryptoError>
 }
 
 public extension UUCrypto
 {
     /// Encrypts ``value`` using the instance default ``keyAlias``.
-    func encrypt(value: Data?) async -> Result<Data?, UUCryptoError>
+    func deviceEncrypt(value: Data?) async -> Result<Data?, UUCryptoError>
     {
-        return await encrypt(value: value, keyAlias: "")
+        return await deviceEncrypt(value: value, keyAlias: "")
     }
     
     /// Decrypts ``value`` using the instance default ``keyAlias``.
-    func decrypt(value: Data?) async -> Result<Data?, UUCryptoError>
+    func deviceDecrypt(value: Data?) async -> Result<Data?, UUCryptoError>
     {
-        return await decrypt(value: value, keyAlias: "")
+        return await deviceDecrypt(value: value, keyAlias: "")
     }
 }
 
 // MARK: - UUDeviceCrypto
 
-/// Default ``UUCrypto`` implementation using ``SecKeyCreateEncryptedData`` and
-/// ``SecKeyCreateDecryptedData`` with the algorithm from the injected ``UUKeyStore``.
+/// Default ``UUCrypto`` implementation using hardware-backed keys from an injected ``UUKeyStore``.
 ///
-/// Each operation loads (or generates) the private key for the resolved alias, derives the public key,
-/// and performs ECIES using the key store's ``algorithm`` property. Ciphertext format is defined by the
-/// Security framework for the configured algorithm (default: variable-IV X9.63 SHA-256 AES-GCM).
+/// Each operation loads (or generates) the private key for the resolved alias, derives the public key
+/// for encryption, and uses the Security framework algorithm configured on the key store. Ciphertext
+/// is specific to this device and platform; it is not intended for interchange with servers or other
+/// operating systems.
 public struct UUDeviceCrypto: UUCrypto
 {
     private let keyAlias: String
@@ -90,8 +95,8 @@ public struct UUDeviceCrypto: UUCrypto
     /// Creates a crypto helper bound to a default alias and key store.
     ///
     /// - Parameters:
-    ///   - keyAlias: Default reverse-DNS alias when ``encrypt(value:keyAlias:)`` or
-    ///     ``decrypt(value:keyAlias:)`` is called with an empty ``keyAlias``.
+    ///   - keyAlias: Default reverse-DNS alias when ``deviceEncrypt(value:keyAlias:)`` or
+    ///     ``deviceDecrypt(value:keyAlias:)`` is called with an empty ``keyAlias``.
     ///   - keyStore: Source of private ``SecKey`` references (typically a shared ``UUDeviceKeyStore``).
     public init(
         keyAlias: String,
@@ -101,8 +106,8 @@ public struct UUDeviceCrypto: UUCrypto
         self.keyStore = keyStore
     }
     
-    /// Encrypts ``value`` with the public key for the resolved alias.
-    public func encrypt(value: Data?, keyAlias: String = "") async -> Result<Data?, UUCryptoError>
+    /// Encrypts ``value`` for the device key pair identified by the resolved alias.
+    public func deviceEncrypt(value: Data?, keyAlias: String = "") async -> Result<Data?, UUCryptoError>
     {
         // Null in --> Null Out
         guard let unencryptedInput = value else
@@ -148,8 +153,8 @@ public struct UUDeviceCrypto: UUCrypto
         return .success(encryptedData)
     }
     
-    /// Decrypts ``value`` with the private key for the resolved alias.
-    public func decrypt(value: Data?, keyAlias: String = "") async -> Result<Data?, UUCryptoError>
+    /// Decrypts ``value`` with the device private key for the resolved alias.
+    public func deviceDecrypt(value: Data?, keyAlias: String = "") async -> Result<Data?, UUCryptoError>
     {
         // Null in --> Null Out
         guard let encryptedInput = value else

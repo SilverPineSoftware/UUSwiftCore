@@ -54,8 +54,8 @@ final class UUDeviceCryptoConnectedTests: XCTestCase
     func test_encryptAndDecrypt_roundTrip_succeeds() async throws
     {
         let plaintext = Data("connected-crypto-round-trip".utf8)
-        let encrypted = try await crypto.encrypt(value: plaintext).get()
-        let decrypted = try await crypto.decrypt(value: encrypted).get()
+        let encrypted = try await crypto.deviceEncrypt(value: plaintext).get()
+        let decrypted = try await crypto.deviceDecrypt(value: encrypted).get()
 
         XCTAssertNotNil(encrypted)
         XCTAssertFalse(encrypted!.isEmpty)
@@ -65,13 +65,13 @@ final class UUDeviceCryptoConnectedTests: XCTestCase
     func test_encrypt_producesDifferentCiphertextForSamePlaintext() async throws
     {
         let plaintext = Data("connected-non-deterministic".utf8)
-        let first = try await crypto.encrypt(value: plaintext).get()
-        let second = try await crypto.encrypt(value: plaintext).get()
+        let first = try await crypto.deviceEncrypt(value: plaintext).get()
+        let second = try await crypto.deviceEncrypt(value: plaintext).get()
 
         XCTAssertNotEqual(first, second)
 
-        let decryptedFirst = try await crypto.decrypt(value: first).get()
-        let decryptedSecond = try await crypto.decrypt(value: second).get()
+        let decryptedFirst = try await crypto.deviceDecrypt(value: first).get()
+        let decryptedSecond = try await crypto.deviceDecrypt(value: second).get()
         XCTAssertEqual(decryptedFirst, plaintext)
         XCTAssertEqual(decryptedSecond, plaintext)
     }
@@ -81,15 +81,15 @@ final class UUDeviceCryptoConnectedTests: XCTestCase
         let plaintextA = Data("connected-crypto-alpha".utf8)
         let plaintextB = Data("connected-crypto-beta".utf8)
 
-        let encryptedA = try await crypto.encrypt(value: plaintextA, keyAlias: primaryAlias).get()
-        let encryptedB = try await crypto.encrypt(value: plaintextB, keyAlias: secondaryAlias).get()
+        let encryptedA = try await crypto.deviceEncrypt(value: plaintextA, keyAlias: primaryAlias).get()
+        let encryptedB = try await crypto.deviceEncrypt(value: plaintextB, keyAlias: secondaryAlias).get()
 
-        let decryptedA = try await crypto.decrypt(value: encryptedA, keyAlias: primaryAlias).get()
-        let decryptedB = try await crypto.decrypt(value: encryptedB, keyAlias: secondaryAlias).get()
+        let decryptedA = try await crypto.deviceDecrypt(value: encryptedA, keyAlias: primaryAlias).get()
+        let decryptedB = try await crypto.deviceDecrypt(value: encryptedB, keyAlias: secondaryAlias).get()
         XCTAssertEqual(decryptedA, plaintextA)
         XCTAssertEqual(decryptedB, plaintextB)
 
-        let wrongKeyResult = await crypto.decrypt(value: encryptedA, keyAlias: secondaryAlias)
+        let wrongKeyResult = await crypto.deviceDecrypt(value: encryptedA, keyAlias: secondaryAlias)
         guard case .failure(.decryptionFailed) = wrongKeyResult else
         {
             XCTFail("Expected .decryptionFailed, got \(wrongKeyResult)")
@@ -102,22 +102,22 @@ final class UUDeviceCryptoConnectedTests: XCTestCase
         let otherCrypto = UUDeviceCrypto(keyAlias: primaryAlias, keyStore: keyStore)
         let plaintext = Data("connected-shared-crypto".utf8)
 
-        let encrypted = try await crypto.encrypt(value: plaintext).get()
-        let decrypted = try await otherCrypto.decrypt(value: encrypted).get()
+        let encrypted = try await crypto.deviceEncrypt(value: plaintext).get()
+        let decrypted = try await otherCrypto.deviceDecrypt(value: encrypted).get()
 
         XCTAssertEqual(decrypted, plaintext)
     }
 
     func test_nullAndEmptyInputs_passthrough() async throws
     {
-        let encryptedNil = try await crypto.encrypt(value: nil).get()
-        let decryptedNil = try await crypto.decrypt(value: nil).get()
+        let encryptedNil = try await crypto.deviceEncrypt(value: nil).get()
+        let decryptedNil = try await crypto.deviceDecrypt(value: nil).get()
         XCTAssertNil(encryptedNil)
         XCTAssertNil(decryptedNil)
 
         let empty = Data()
-        let encryptedEmpty = try await crypto.encrypt(value: empty).get()
-        let decryptedEmpty = try await crypto.decrypt(value: empty).get()
+        let encryptedEmpty = try await crypto.deviceEncrypt(value: empty).get()
+        let decryptedEmpty = try await crypto.deviceDecrypt(value: empty).get()
         XCTAssertEqual(encryptedEmpty, empty)
         XCTAssertEqual(decryptedEmpty, empty)
     }

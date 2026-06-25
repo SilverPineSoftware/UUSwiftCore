@@ -71,8 +71,8 @@ final class UUSecuritySharedKeyStoreTests: XCTestCase
             keyStore: UUSecurity.keyStore)
         let plaintext = Data("security-shared-keystore".utf8)
 
-        let encrypted = try await UUSecurity.crypto.encrypt(value: plaintext).get()
-        let decrypted = try await companionCrypto.decrypt(value: encrypted).get()
+        let encrypted = try await UUSecurity.crypto.deviceEncrypt(value: plaintext).get()
+        let decrypted = try await companionCrypto.deviceDecrypt(value: encrypted).get()
 
         XCTAssertEqual(decrypted, plaintext)
     }
@@ -110,8 +110,8 @@ final class UUSecurityIntegrationTests: XCTestCase
     func test_crypto_encryptAndDecrypt_roundTrip_succeeds() async throws
     {
         let plaintext = Data("security-integration-round-trip".utf8)
-        let encrypted = try await UUSecurity.crypto.encrypt(value: plaintext).get()
-        let decrypted = try await UUSecurity.crypto.decrypt(value: encrypted).get()
+        let encrypted = try await UUSecurity.crypto.deviceEncrypt(value: plaintext).get()
+        let decrypted = try await UUSecurity.crypto.deviceDecrypt(value: encrypted).get()
 
         XCTAssertNotNil(encrypted)
         XCTAssertEqual(decrypted, plaintext)
@@ -119,14 +119,14 @@ final class UUSecurityIntegrationTests: XCTestCase
 
     func test_crypto_nullAndEmptyInputs_passthrough() async throws
     {
-        let encryptedNil = try await UUSecurity.crypto.encrypt(value: nil).get()
-        let decryptedNil = try await UUSecurity.crypto.decrypt(value: nil).get()
+        let encryptedNil = try await UUSecurity.crypto.deviceEncrypt(value: nil).get()
+        let decryptedNil = try await UUSecurity.crypto.deviceDecrypt(value: nil).get()
         XCTAssertNil(encryptedNil)
         XCTAssertNil(decryptedNil)
 
         let empty = Data()
-        let encryptedEmpty = try await UUSecurity.crypto.encrypt(value: empty).get()
-        let decryptedEmpty = try await UUSecurity.crypto.decrypt(value: empty).get()
+        let encryptedEmpty = try await UUSecurity.crypto.deviceEncrypt(value: empty).get()
+        let decryptedEmpty = try await UUSecurity.crypto.deviceDecrypt(value: empty).get()
         XCTAssertEqual(encryptedEmpty, empty)
         XCTAssertEqual(decryptedEmpty, empty)
     }
@@ -136,8 +136,8 @@ final class UUSecurityIntegrationTests: XCTestCase
         let featureCrypto = UUDeviceCrypto(keyAlias: featureAlias, keyStore: UUSecurity.keyStore)
         let plaintext = Data("security-feature-alias".utf8)
 
-        let encrypted = try await featureCrypto.encrypt(value: plaintext).get()
-        let decrypted = try await featureCrypto.decrypt(value: encrypted).get()
+        let encrypted = try await featureCrypto.deviceEncrypt(value: plaintext).get()
+        let decrypted = try await featureCrypto.deviceDecrypt(value: encrypted).get()
 
         XCTAssertEqual(decrypted, plaintext)
     }

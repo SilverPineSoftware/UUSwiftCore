@@ -25,7 +25,7 @@ private struct MockUUCryptoPrefix: UUCrypto
 {
     private let prefix = Data("enc:".utf8)
 
-    func encrypt(value: Data?, keyAlias: String) async -> Result<Data?, UUCryptoError>
+    func deviceEncrypt(value: Data?, keyAlias: String) async -> Result<Data?, UUCryptoError>
     {
         guard let value else
         {
@@ -40,7 +40,7 @@ private struct MockUUCryptoPrefix: UUCrypto
         return .success(prefix + value)
     }
 
-    func decrypt(value: Data?, keyAlias: String) async -> Result<Data?, UUCryptoError>
+    func deviceDecrypt(value: Data?, keyAlias: String) async -> Result<Data?, UUCryptoError>
     {
         guard let value else
         {
@@ -63,12 +63,12 @@ private struct MockUUCryptoPrefix: UUCrypto
 
 private struct MockUUCryptoFailing: UUCrypto
 {
-    func encrypt(value: Data?, keyAlias: String) async -> Result<Data?, UUCryptoError>
+    func deviceEncrypt(value: Data?, keyAlias: String) async -> Result<Data?, UUCryptoError>
     {
         return .failure(.encryptionFailed(underlying: nil))
     }
 
-    func decrypt(value: Data?, keyAlias: String) async -> Result<Data?, UUCryptoError>
+    func deviceDecrypt(value: Data?, keyAlias: String) async -> Result<Data?, UUCryptoError>
     {
         return .failure(.decryptionFailed(underlying: nil))
     }
