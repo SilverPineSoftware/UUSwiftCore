@@ -15,13 +15,13 @@ import XCTest
 final class UUKeychainConnectedTests: XCTestCase
 {
     private var serviceIdentifier: String!
-    private var keychain: UUKeychain!
+    private var keychain: UUPlainKeychain!
 
     override func setUp() async throws
     {
         try await super.setUp()
         serviceIdentifier = "com.uu.tests.keychain.\(UUID().uuidString)"
-        keychain = UUKeychain(serviceIdentifier: serviceIdentifier)
+        keychain = UUPlainKeychain(serviceIdentifier: serviceIdentifier)
     }
 
     override func tearDown() async throws
@@ -251,7 +251,7 @@ final class UUKeychainConnectedTests: XCTestCase
 
     func test_write_returnsMissingEntitlementForUnentitledAccessGroup() async
     {
-        let unentitledKeychain = UUKeychain(
+        let unentitledKeychain = UUPlainKeychain(
             serviceIdentifier: serviceIdentifier,
             accessGroup: "com.silverpine.uu.not.entitled.\(UUID().uuidString)")
 
@@ -265,7 +265,7 @@ final class UUKeychainConnectedTests: XCTestCase
 
     func test_itemsAreScopedByServiceIdentifier() async
     {
-        let otherKeychain = UUKeychain(serviceIdentifier: "\(serviceIdentifier!).other")
+        let otherKeychain = UUPlainKeychain(serviceIdentifier: "\(serviceIdentifier!).other")
 
         let writeError = await keychain.write(
             key: TestKeys.primary,
@@ -292,10 +292,10 @@ final class UUKeychainConnectedTests: XCTestCase
             throw XCTSkip("Shared keychain access group entitlement is not configured on the test host.")
         }
 
-        let writer = UUKeychain(
+        let writer = UUPlainKeychain(
             serviceIdentifier: serviceIdentifier,
             accessGroup: accessGroup)
-        let reader = UUKeychain(
+        let reader = UUPlainKeychain(
             serviceIdentifier: serviceIdentifier,
             accessGroup: accessGroup)
 
@@ -323,10 +323,10 @@ final class UUKeychainConnectedTests: XCTestCase
 
         XCTAssertNotEqual(sharedAccessGroup, defaultAccessGroup)
 
-        let sharedKeychain = UUKeychain(
+        let sharedKeychain = UUPlainKeychain(
             serviceIdentifier: serviceIdentifier,
             accessGroup: sharedAccessGroup)
-        let defaultKeychain = UUKeychain(
+        let defaultKeychain = UUPlainKeychain(
             serviceIdentifier: serviceIdentifier,
             accessGroup: defaultAccessGroup)
 

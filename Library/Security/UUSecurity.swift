@@ -48,14 +48,14 @@ import Foundation
 ///
 /// For feature-specific EC aliases, pass a per-call ``keyAlias`` to
 /// ``UUCrypto/encrypt(value:keyAlias:)`` or create a dedicated ``UUCrypto`` instance that shares
-/// ``keyStore``. For additional Keychain namespaces, create a separate ``UUKeychain`` with its own
-/// ``UUKeychainProtocol/serviceIdentifier``.
+/// ``keyStore``. For additional Keychain namespaces, create a separate ``UUPlainKeychain`` with its own
+/// ``UUKeychain/serviceIdentifier``.
 public struct UUSecurity
 {
     /// Default reverse-DNS alias used by ``crypto`` when no per-call override is supplied.
     internal static let defaultCryptoKeyAlias = "com.silverpine.uu.core.security.UUCrypto"
 
-    /// Service namespace passed to ``UUKeychain/init(serviceIdentifier:accessGroup:)`` for ``keychain``.
+    /// Service namespace passed to ``UUPlainKeychain/init(serviceIdentifier:accessGroup:)`` for ``keychain``.
     internal static let keychainServiceIdentifier = "com.silverpine.uu.core.security.UUKeychain"
 
     /// Shared key store used by ``crypto`` and available for custom ``UUCrypto`` instances.
@@ -77,10 +77,10 @@ public struct UUSecurity
 
     /// Shared generic-password Keychain accessor scoped to ``keychainServiceIdentifier``.
     ///
-    /// Stores opaque secrets (for example API tokens) independently of the EC keys managed by
-    /// ``keyStore``. Items are namespaced by account key via ``UUKeychainProtocol/read(key:)`` and
-    /// ``UUKeychainProtocol/write(key:accessLevel:data:)``.
-    public static let keychain: UUKeychainProtocol = UUKeychain(
+    /// Default implementation is ``UUPlainKeychain``. Stores opaque secrets (for example API tokens)
+    /// independently of the EC keys managed by ``keyStore``. Items are namespaced by account key via
+    /// ``UUKeychain/read(key:)`` and ``UUKeychain/write(key:accessLevel:data:)``.
+    public static let keychain: any UUKeychain = UUPlainKeychain(
         serviceIdentifier: Self.keychainServiceIdentifier)
 }
 

@@ -39,6 +39,11 @@ final class UUSecurityConfigurationTests: XCTestCase
         XCTAssertTrue(UUSecurity.keyStore is UUDeviceKeyStore)
     }
 
+    func test_keychain_usesPlainKeychainImplementation() async
+    {
+        XCTAssertTrue(UUSecurity.keychain is UUPlainKeychain)
+    }
+
     func test_crypto_isBoundToDefaultKeyAlias() async
     {
         XCTAssertEqual(UUSecurity.defaultCryptoKeyAlias, "com.silverpine.uu.core.security.UUCrypto")

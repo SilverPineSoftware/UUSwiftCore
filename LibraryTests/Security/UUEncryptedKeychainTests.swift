@@ -140,7 +140,7 @@ final class UUEncryptedKeychainTransformTests: XCTestCase
             data: Data("secret".utf8))
         XCTAssertNil(writeError)
 
-        let plainKeychain = UUKeychain(serviceIdentifier: keychain.serviceIdentifier)
+        let plainKeychain = UUPlainKeychain(serviceIdentifier: keychain.serviceIdentifier)
         let overwriteError = await plainKeychain.write(
             key: TestKeys.primary,
             accessLevel: .whenUnlocked,
@@ -164,7 +164,7 @@ final class UUEncryptedKeychainTransformTests: XCTestCase
 final class UUEncryptedKeychainIntegrationTests: XCTestCase
 {
     private var keychain: UUEncryptedKeychain!
-    private var rawKeychain: UUKeychain!
+    private var rawKeychain: UUPlainKeychain!
 
     override func setUp() async throws
     {
@@ -179,7 +179,7 @@ final class UUEncryptedKeychainIntegrationTests: XCTestCase
         keychain = UUEncryptedKeychain(
             serviceIdentifier: serviceIdentifier,
             crypto: PrefixMockCrypto())
-        rawKeychain = UUKeychain(serviceIdentifier: serviceIdentifier)
+        rawKeychain = UUPlainKeychain(serviceIdentifier: serviceIdentifier)
     }
 
     override func tearDown() async throws
@@ -292,7 +292,7 @@ final class UUEncryptedKeychainCryptoIntegrationTests: XCTestCase
         let result = await keychain.read(key: TestKeys.primary)
         XCTAssertEqual(try? result.get(), payload)
 
-        let rawKeychain = UUKeychain(serviceIdentifier: keychain.serviceIdentifier)
+        let rawKeychain = UUPlainKeychain(serviceIdentifier: keychain.serviceIdentifier)
         let rawResult = await rawKeychain.read(key: TestKeys.primary)
         let rawData = try XCTUnwrap(try? rawResult.get())
         XCTAssertNotEqual(rawData, payload)

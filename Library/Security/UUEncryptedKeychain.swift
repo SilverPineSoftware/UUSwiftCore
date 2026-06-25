@@ -12,7 +12,7 @@
 //
 //  ``UUEncryptedKeychain`` subclasses ``UUKeychainBase`` and overrides the transform hooks to
 //  ECIES-encrypt on write and decrypt on read. The Keychain therefore holds ciphertext while callers
-//  of ``UUKeychainProtocol/read(key:)`` and ``write(key:accessLevel:data:)`` work with plaintext.
+//  of ``UUKeychain/read(key:)`` and ``write(key:accessLevel:data:)`` work with plaintext.
 //
 
 #if os(iOS) || os(macOS)

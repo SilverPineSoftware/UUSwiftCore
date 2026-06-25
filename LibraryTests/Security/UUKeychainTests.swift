@@ -4,6 +4,8 @@
 //
 //  Created by Ryan DeVore on 6/16/26.
 //
+//  Tests for ``UUKeychain``, ``UUPlainKeychain``, and ``UUKeychainBase`` subclasses.
+//
 
 #if os(iOS) || os(macOS)
 
@@ -91,12 +93,12 @@ final class UUKeychainAccessLevelTests: XCTestCase
 
 final class UUKeychainValidationTests: XCTestCase
 {
-    private var keychain: UUKeychain!
+    private var keychain: UUPlainKeychain!
 
     override func setUp() async throws
     {
         try await super.setUp()
-        keychain = UUKeychain(serviceIdentifier: "com.uu.tests.keychain.validation.\(UUID().uuidString)")
+        keychain = UUPlainKeychain(serviceIdentifier: "com.uu.tests.keychain.validation.\(UUID().uuidString)")
     }
 
     func test_read_returnsInvalidKeyForEmptyKey() async
@@ -181,7 +183,7 @@ final class UUKeychainValidationTests: XCTestCase
 
 // MARK: - Mock protocol tests
 
-final class UUKeychainProtocolTests: XCTestCase
+final class UUKeychainMockTests: XCTestCase
 {
     func test_mockKeychain_readWriteClear() async
     {
@@ -431,7 +433,7 @@ private actor MockKeychainStore
     }
 }
 
-private actor MockKeychain: UUKeychainProtocol
+private actor MockKeychain: UUKeychain
 {
     let serviceIdentifier: String
     let accessGroup: String?

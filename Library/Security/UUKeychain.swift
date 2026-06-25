@@ -10,9 +10,9 @@
 //
 //  Async Keychain Services storage for generic passwords on iOS and macOS.
 //
-//  ``UUKeychainProtocol`` defines scoped read, write, and clear operations.
+//  ``UUKeychain`` defines scoped read, write, and clear operations.
 //  ``UUKeychainBase`` implements the protocol as an open class with hooks to transform stored bytes.
-//  ``UUKeychain`` stores logical values unchanged. ``UUEncryptedKeychain`` encrypts and decrypts
+//  ``UUPlainKeychain`` stores logical values unchanged. ``UUEncryptedKeychain`` encrypts and decrypts
 //  via ``UUCrypto``. Apps typically expose a shared instance per app or feature boundary.
 //
 
@@ -71,7 +71,7 @@ public extension UUKeychainAccessLevel
 
 // MARK: - Errors
 
-/// Errors produced by ``UUKeychain`` and ``UUKeychainProtocol`` implementations.
+/// Errors produced by ``UUKeychain``, ``UUPlainKeychain``, and ``UUEncryptedKeychain``.
 public enum UUKeychainError: Error, Equatable, Sendable
 {
     /// No item exists for the given service and account key.
@@ -240,19 +240,19 @@ public extension UUKeychainError
     }
 }
 
-// MARK: - Protocol
+// MARK: - UUKeychain
 
 /// Async Keychain storage scoped by ``serviceIdentifier`` and optional ``accessGroup``.
 ///
-/// Inject a ``UUKeychain`` instance (or test double) instead of using static Keychain helpers.
+/// Inject a ``UUKeychain`` (or test double) instead of using static Keychain helpers.
 /// Apps typically define a shared instance:
 ///
 /// ```swift
 /// enum AppKeychain {
-///     static let shared = UUKeychain(serviceIdentifier: "com.example.app.secrets")
+///     static let shared: any UUKeychain = UUPlainKeychain(serviceIdentifier: "com.example.app.secrets")
 /// }
 /// ```
-public protocol UUKeychainProtocol: Sendable
+public protocol UUKeychain: Sendable
 {
     /// Namespace for stored items, mapped to ``kSecAttrService``.
     var serviceIdentifier: String { get }
@@ -272,7 +272,7 @@ public protocol UUKeychainProtocol: Sendable
     func clear(key: String) async -> UUKeychainError?
 }
 
-public extension UUKeychainProtocol
+public extension UUKeychain
 {
     /// Reads a string for ``key`` by decoding the stored bytes with ``encoding``.
     ///
@@ -343,7 +343,7 @@ public extension UUKeychainProtocol
 ///
 /// Security framework calls are serialized per instance with an internal lock. Transform hooks run
 /// outside the lock so async work (for example ``UUCrypto``) does not block other Keychain access.
-open class UUKeychainBase: UUKeychainProtocol, @unchecked Sendable
+open class UUKeychainBase: UUKeychain, @unchecked Sendable
 {
     private let lock = NSLock()
 
@@ -576,10 +576,10 @@ open class UUKeychainBase: UUKeychainProtocol, @unchecked Sendable
     }
 }
 
-/// Default ``UUKeychainProtocol`` implementation that stores logical bytes unchanged.
+/// Default ``UUKeychain`` implementation that stores logical bytes unchanged.
 ///
 /// Equivalent to ``UUKeychainBase`` with the default identity transform hooks.
-public final class UUKeychain: UUKeychainBase, @unchecked Sendable
+public final class UUPlainKeychain: UUKeychainBase, @unchecked Sendable
 {
     /// Creates a Keychain accessor for the given service namespace.
     public override init(

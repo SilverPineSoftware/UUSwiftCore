@@ -22,7 +22,7 @@ final class UUEncryptedKeychainConnectedTests: XCTestCase
     private var secondaryKey: String!
     private var keyStore: UUDeviceKeyStore!
     private var keychain: UUEncryptedKeychain!
-    private var rawKeychain: UUKeychain!
+    private var rawKeychain: UUPlainKeychain!
 
     override func setUp() async throws
     {
@@ -45,7 +45,7 @@ final class UUEncryptedKeychainConnectedTests: XCTestCase
         keychain = UUEncryptedKeychain(
             serviceIdentifier: serviceIdentifier,
             crypto: UUCrypto(keyAlias: primaryKey, keyStore: keyStore))
-        rawKeychain = UUKeychain(serviceIdentifier: serviceIdentifier)
+        rawKeychain = UUPlainKeychain(serviceIdentifier: serviceIdentifier)
     }
 
     override func tearDown() async throws
