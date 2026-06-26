@@ -15,7 +15,7 @@ final class UUCompressionTests: XCTestCase
 
     func test_unzipInvalidData()
     {
-        let invalidData = UURandom.randomBytes(length: 1024)
+        let invalidData = UURandom.bytes(length: 1024)
         let outputFolder = makeOutputFolder()
 
         invalidData.uuUnzip(destinationFolder: outputFolder)
@@ -266,7 +266,7 @@ final class UUCompressionTests: XCTestCase
 
         for i in 0..<fileCount
         {
-            let fileData = UURandom.randomBytes(length: 1024).uuToHexString().data(using: .utf8) ?? Data()
+            let fileData = UURandom.bytes(length: 1024).uuToHexString().data(using: .utf8) ?? Data()
             let name = "random_file_\(i).txt"
             let nameBytes = [UInt8](name.utf8)
             let crc = crc32(data: fileData)
