@@ -7,6 +7,7 @@
 //  The only requirement is that you smile everytime you use it.
 //
 import Foundation
+import CryptoKit
 
 fileprivate let LOG_TAG : String = "UUData"
 
@@ -405,5 +406,31 @@ public extension Data
         }
         
         return chunks   
+    }
+    
+    // MARK: - SHA
+
+    /// Computes the SHA-256 digest of the data (FIPS 180-4).
+    ///
+    /// Returns a 32-byte digest. Implemented with CryptoKit ``SHA256``.
+    func uuSha256() -> Data
+    {
+        return Data(SHA256.hash(data: self))
+    }
+
+    /// Computes the SHA-384 digest of the data (FIPS 180-4).
+    ///
+    /// Returns a 48-byte digest. Implemented with CryptoKit ``SHA384``.
+    func uuSha384() -> Data
+    {
+        return Data(SHA384.hash(data: self))
+    }
+
+    /// Computes the SHA-512 digest of the data (FIPS 180-4).
+    ///
+    /// Returns a 64-byte digest. Implemented with CryptoKit ``SHA512``.
+    func uuSha512() -> Data
+    {
+        return Data(SHA512.hash(data: self))
     }
 }
