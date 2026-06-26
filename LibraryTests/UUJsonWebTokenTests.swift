@@ -38,11 +38,7 @@ private enum JwtTestVectors
 
     static func base64URL(data: Data) -> String
     {
-        data
-            .base64EncodedString()
-            .replacingOccurrences(of: "+", with: "-")
-            .replacingOccurrences(of: "/", with: "_")
-            .replacingOccurrences(of: "=", with: "")
+        return data.uuBase64UrlEncode()
     }
 
     static func signedToken(
