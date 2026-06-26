@@ -189,7 +189,7 @@ final class UURandomIntRangeTests: XCTestCase
         {
             let actual = UURandom.int(min: min, max: max)
             XCTAssertGreaterThanOrEqual(actual, min)
-            XCTAssertLessThan(actual, max)
+            XCTAssertLessThanOrEqual(actual, max)
         }
     }
 
@@ -202,8 +202,21 @@ final class UURandomIntRangeTests: XCTestCase
         {
             let actual = UURandom.int(min: min, max: max)
             XCTAssertGreaterThanOrEqual(actual, min)
-            XCTAssertLessThan(actual, max)
+            XCTAssertLessThanOrEqual(actual, max)
         }
+    }
+
+    func test_int_minMax_includesEndpoints()
+    {
+        XCTAssertEqual(UURandom.int(min: 5, max: 5), 5)
+
+        var values = Set<Int>()
+        for _ in 0..<64
+        {
+            values.insert(UURandom.int(min: 5, max: 6))
+        }
+
+        XCTAssertEqual(values, Set([5, 6]))
     }
 
     func test_int_max_upperBound()
@@ -214,7 +227,7 @@ final class UURandomIntRangeTests: XCTestCase
         {
             let actual = UURandom.int(max: max)
             XCTAssertGreaterThanOrEqual(actual, 0)
-            XCTAssertLessThan(actual, max)
+            XCTAssertLessThanOrEqual(actual, max)
         }
     }
 }

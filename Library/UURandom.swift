@@ -72,19 +72,24 @@ public struct UURandom
         return Int(loadInteger(Int32.self))
     }
 
-    /// Generates a random integer in `min..<max`.
+    /// Generates a random integer in `min...max` (both bounds inclusive).
     public static func int(min: Int, max: Int) -> Int
     {
-        let range = max - min
-        guard range > 0 else
+        guard min <= max else
         {
             return min
         }
 
-        return min + Int(secureUniform(upperBound: UInt32(range)))
+        if min == max
+        {
+            return min
+        }
+
+        let span = UInt64(max &- min) + 1
+        return min &+ Int(truncatingIfNeeded: secureUniform(span: span))
     }
 
-    /// Generates a random integer in `0..<max`.
+    /// Generates a random integer in `0...max` (inclusive).
     public static func int(max: Int) -> Int
     {
         return int(min: 0, max: max)
@@ -96,13 +101,13 @@ public struct UURandom
         return bool() ? int() : nil
     }
 
-    /// Generates a random integer in `min..<max`, or `nil` when ``bool()`` is `false`.
+    /// Generates a random integer in `min...max`, or `nil` when ``bool()`` is `false`.
     public static func intOrNull(min: Int, max: Int) -> Int?
     {
         return bool() ? int(min: min, max: max) : nil
     }
 
-    /// Generates a random integer in `0..<max`, or `nil` when ``bool()`` is `false`.
+    /// Generates a random integer in `0...max`, or `nil` when ``bool()`` is `false`.
     public static func intOrNull(max: Int) -> Int?
     {
         return bool() ? int(max: max) : nil
@@ -600,21 +605,26 @@ public struct UURandom
 
     private static func secureUniform(upperBound: UInt32) -> UInt32
     {
-        guard upperBound > 1 else
+        return UInt32(truncatingIfNeeded: secureUniform(span: UInt64(upperBound)))
+    }
+
+    private static func secureUniform(span: UInt64) -> UInt64
+    {
+        guard span > 1 else
         {
             return 0
         }
 
-        let threshold = (UInt32.max / upperBound) * upperBound
-        var value: UInt32 = 0
+        let threshold = (UInt64.max / span) * span
+        var value: UInt64 = 0
 
         repeat
         {
-            value = loadInteger(UInt32.self)
+            value = loadInteger(UInt64.self)
         }
         while value >= threshold
 
-        return value % upperBound
+        return value % span
     }
 
     private static func isCharacter(_ character: Character, in ranges: [(Character, Character)]) -> Bool
