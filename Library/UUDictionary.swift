@@ -11,68 +11,6 @@ import Foundation
 
 public extension Dictionary
 {
-    func uuBuildQueryString(_ appendSquareBracketsToQueryStringArrays: Bool = true) -> String
-    {
-        let sb : NSMutableString = NSMutableString()
-        
-        for key in keys
-        {
-            guard let stringKey = key as? String else
-            {
-                continue
-            }
-            
-            let formattedKey = stringKey.uuUrlEncoded()
-            
-            var prefix = "&"
-            if ((sb as String).count == 0)
-            {
-                prefix = "?"
-            }
-            
-            let rawVal = self[key]
-            var val : String? = nil
-            
-            if (rawVal is String)
-            {
-                val = rawVal as? String
-            }
-            else if (rawVal is NSNumber)
-            {
-                val = (rawVal as? NSNumber)?.stringValue
-            }
-            else if let arrayVal = rawVal as? [String]
-            {
-                var arrayKey = formattedKey
-                if (appendSquareBracketsToQueryStringArrays)
-                {
-                    arrayKey = "\(formattedKey)[]"
-                }
-                
-                for strVal in arrayVal
-                {
-                    if let formattedVal = strVal.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
-                    {
-                        sb.appendFormat("%@%@=%@", prefix, arrayKey, formattedVal)
-                        prefix = "&"
-                    }
-                }
-                
-                continue
-            }
-            
-            if (val != nil)
-            {
-                if let formattedVal = val!.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
-                {
-                    sb.appendFormat("%@%@=%@", prefix, formattedKey, formattedVal)
-                }
-            }
-        }
-        
-        return sb as String
-    }
-    
     func uuSafeGetDate(_ key: Key, formatter: DateFormatter) -> Date?
     {
         guard let stringVal = self[key] as? String else
