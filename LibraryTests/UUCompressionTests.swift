@@ -130,8 +130,7 @@ final class UUCompressionTests: XCTestCase
 
     private func doParseCentralDirectory(named resourceName: String, expectedFileNames: [String])
     {
-        let bundle = Bundle(for: Self.self)
-        guard let zipURL = bundle.url(forResource: resourceName, withExtension: "zip") else
+        guard let zipURL = testResourceURL(named: resourceName, extension: "zip") else
         {
             XCTFail("\(resourceName).zip not found in test bundle")
             return
@@ -164,8 +163,7 @@ final class UUCompressionTests: XCTestCase
 
     private func doUnzipFile(_ named: String)
     {
-        let bundle = Bundle(for: Self.self)
-        guard let zipURL = bundle.url(forResource: named, withExtension: "zip") else
+        guard let zipURL = testResourceURL(named: named, extension: "zip") else
         {
             XCTFail("\(named).zip not found in test bundle")
             return
@@ -204,6 +202,15 @@ final class UUCompressionTests: XCTestCase
     }
     
     // MARK: - Helpers
+
+    private func testResourceURL(named name: String, extension ext: String) -> URL?
+    {
+        #if SWIFT_PACKAGE
+        return Bundle.module.url(forResource: name, withExtension: ext)
+        #else
+        return Bundle(for: Self.self).url(forResource: name, withExtension: ext)
+        #endif
+    }
 
     private func printUnzippedFolderContents(_ directory: URL)
     {
@@ -535,4 +542,3 @@ private let crc32Table: [UInt32] = (0..<256).map { i in
     }
     return c
 }
-

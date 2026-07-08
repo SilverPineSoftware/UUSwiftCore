@@ -36,6 +36,7 @@ let package = Package(
             name: "UUSwiftCoreTests",
             dependencies: ["UUSwiftTestCore", "UUSwiftCore"],
             path: "LibraryTests",
+            exclude: ["UnitTests.xctestplan"],
             resources: [.process("Resources")]),
 	],
     swiftLanguageModes: [
