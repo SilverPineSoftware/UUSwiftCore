@@ -22,14 +22,14 @@ import Foundation
 // MARK: - Constants
 
 /// Standard JSON Web Token field names used by ``UUJsonWebToken`` and related APIs.
-public struct UUJwtConstants
+public struct UUJwtConstants: Sendable
 {
     private init()
     {
     }
 
     /// JOSE header parameter names (RFC 7515 / RFC 7516).
-    public struct Header
+    public struct Header: Sendable
     {
         private init()
         {
@@ -49,7 +49,7 @@ public struct UUJwtConstants
     }
 
     /// Registered JWT claims (RFC 7519).
-    public struct Claim
+    public struct Claim: Sendable
     {
         private init()
         {
@@ -132,6 +132,49 @@ extension UUJwtError: LocalizedError
     }
 }
 
+/// A sendable representation of JSON values decoded from JWT headers and claims.
+public enum UUJsonValue: Equatable, Sendable
+{
+    case string(String)
+    case number(Double)
+    case bool(Bool)
+    case object([String: UUJsonValue])
+    case array([UUJsonValue])
+    case null
+
+    public var stringValue: String?
+    {
+        guard case .string(let value) = self else
+        {
+            return nil
+        }
+
+        return value
+    }
+
+    public var doubleValue: Double?
+    {
+        guard case .number(let value) = self else
+        {
+            return nil
+        }
+
+        return value
+    }
+
+    public var boolValue: Bool?
+    {
+        guard case .bool(let value) = self else
+        {
+            return nil
+        }
+
+        return value
+    }
+}
+
+public typealias UUJsonObject = [String: UUJsonValue]
+
 // MARK: - Parsed token
 
 /// A compact JSON Web Token, either signed (JWS) or encrypted (JWE).
@@ -139,7 +182,7 @@ extension UUJwtError: LocalizedError
 /// Use ``parse(_:)`` to parse compact serialization, then switch on ``signed(_:)`` or
 /// ``encrypted(_:)``. Conforms to ``CustomStringConvertible`` and forwards ``description``
 /// to the wrapped token.
-public enum UUJsonWebToken
+public enum UUJsonWebToken: Sendable
 {
     /// A signed token (JWS) with three Base64URL-encoded parts.
     case signed(UUSignedJsonWebToken)
@@ -188,16 +231,16 @@ public enum UUJsonWebToken
 /// and inspection without verifying the signature.
 ///
 /// Conforms to ``CustomStringConvertible``; see ``description`` for the logging format.
-public struct UUSignedJsonWebToken
+public struct UUSignedJsonWebToken: Sendable
 {
     /// Original compact serialization used to create this value.
     public let compactSerialization: String
 
     /// Decoded JOSE header (for example `alg`, `typ`, `kid`).
-    public let header: [AnyHashable: Any]
+    public let header: UUJsonObject
 
     /// Decoded payload claims. Only JSON object payloads are supported.
-    public let payload: [AnyHashable: Any]
+    public let payload: UUJsonObject
 
     /// Decoded signature bytes.
     public let signature: Data
@@ -211,8 +254,8 @@ public struct UUSignedJsonWebToken
     ///   - signature: Decoded signature bytes.
     public init(
         compactSerialization: String,
-        header: [AnyHashable: Any],
-        payload: [AnyHashable: Any],
+        header: UUJsonObject,
+        payload: UUJsonObject,
         signature: Data)
     {
         self.compactSerialization = compactSerialization
@@ -241,31 +284,31 @@ public struct UUSignedJsonWebToken
     /// `alg` header value when present.
     public var algorithm: String?
     {
-        header[UUJwtConstants.Header.algorithm] as? String
+        header[UUJwtConstants.Header.algorithm]?.stringValue
     }
 
     /// `typ` header value when present.
     public var type: String?
     {
-        header[UUJwtConstants.Header.type] as? String
+        header[UUJwtConstants.Header.type]?.stringValue
     }
 
     /// `sub` claim when present.
     public var subject: String?
     {
-        payload[UUJwtConstants.Claim.subject] as? String
+        payload[UUJwtConstants.Claim.subject]?.stringValue
     }
 
     /// `iss` claim when present.
     public var issuer: String?
     {
-        payload[UUJwtConstants.Claim.issuer] as? String
+        payload[UUJwtConstants.Claim.issuer]?.stringValue
     }
 
     /// `aud` claim when present (string audience only).
     public var audience: String?
     {
-        payload[UUJwtConstants.Claim.audience] as? String
+        payload[UUJwtConstants.Claim.audience]?.stringValue
     }
 
     /// `exp` claim as a ``Date`` when present.
@@ -305,7 +348,7 @@ public struct UUSignedJsonWebToken
                 return .failure(error)
         }
 
-        let header: [AnyHashable: Any]
+        let header: UUJsonObject
         switch UUJwtParser.decodeJsonObject(from: headerData, part: 0)
         {
             case .success(let json):
@@ -334,7 +377,7 @@ public struct UUSignedJsonWebToken
                 return .failure(error)
         }
 
-        let payload: [AnyHashable: Any]
+        let payload: UUJsonObject
         switch UUJwtParser.decodeJsonObject(from: payloadData, part: 1)
         {
             case .success(let json):
@@ -370,13 +413,13 @@ public struct UUSignedJsonWebToken
 /// blobs used for key management and content encryption.
 ///
 /// Conforms to ``CustomStringConvertible``; see ``description`` for the logging format.
-public struct UUEncryptedJsonWebToken
+public struct UUEncryptedJsonWebToken: Sendable
 {
     /// Original compact serialization used to create this value.
     public let compactSerialization: String
 
     /// Decoded protected header (for example `alg`, `enc`, `kid`).
-    public let protectedHeader: [AnyHashable: Any]
+    public let protectedHeader: UUJsonObject
 
     /// Encrypted content encryption key (CEK).
     public let encryptedKey: Data
@@ -401,7 +444,7 @@ public struct UUEncryptedJsonWebToken
     ///   - authTag: Authentication tag bytes.
     public init(
         compactSerialization: String,
-        protectedHeader: [AnyHashable: Any],
+        protectedHeader: UUJsonObject,
         encryptedKey: Data,
         iv: Data,
         ciphertext: Data,
@@ -435,13 +478,13 @@ public struct UUEncryptedJsonWebToken
     /// `alg` protected-header value when present.
     public var algorithm: String?
     {
-        protectedHeader[UUJwtConstants.Header.algorithm] as? String
+        protectedHeader[UUJwtConstants.Header.algorithm]?.stringValue
     }
 
     /// `enc` protected-header value when present.
     public var encryption: String?
     {
-        protectedHeader[UUJwtConstants.Header.encryption] as? String
+        protectedHeader[UUJwtConstants.Header.encryption]?.stringValue
     }
 
     fileprivate static func parse(
@@ -464,7 +507,7 @@ public struct UUEncryptedJsonWebToken
                 return .failure(error)
         }
 
-        let protectedHeader: [AnyHashable: Any]
+        let protectedHeader: UUJsonObject
         switch UUJwtParser.decodeJsonObject(from: headerData, part: 0)
         {
             case .success(let json):
@@ -598,23 +641,24 @@ private enum UUJwtParser
 
     static func decodeJsonObject(
         from data: Data,
-        part index: Int) -> Result<[AnyHashable: Any], UUJwtError>
+        part index: Int) -> Result<UUJsonObject, UUJwtError>
     {
         guard let json = try? JSONSerialization.jsonObject(with: data, options: []),
-              let dictionary = json as? [AnyHashable: Any]
+              let dictionary = json as? [String: Any],
+              let jsonObject = jsonObject(from: dictionary)
         else
         {
             return .failure(.invalidJson(part: index))
         }
 
-        return .success(dictionary)
+        return .success(jsonObject)
     }
 
     static func requiredHeaderString(
-        _ header: [AnyHashable: Any],
+        _ header: UUJsonObject,
         key: String) -> Result<String, UUJwtError>
     {
-        guard let value = header[key] as? String,
+        guard let value = header[key]?.stringValue,
               !value.isEmpty
         else
         {
@@ -624,45 +668,99 @@ private enum UUJwtParser
         return .success(value)
     }
 
-    static func date(fromNumericDateClaim value: Any?) -> Date?
+    static func date(fromNumericDateClaim value: UUJsonValue?) -> Date?
     {
-        let seconds: TimeInterval?
-
-        switch value
-        {
-            case let number as NSNumber:
-                seconds = number.doubleValue
-
-            case let number as Double:
-                seconds = number
-
-            case let number as Int:
-                seconds = TimeInterval(number)
-
-            default:
-                seconds = nil
-        }
-
-        guard let seconds else
+        guard let seconds = value?.doubleValue else
         {
             return nil
         }
 
         return Date(timeIntervalSince1970: seconds)
     }
+
+    static func jsonObject(from dictionary: [String: Any]) -> UUJsonObject?
+    {
+        var object: UUJsonObject = [:]
+
+        for (key, value) in dictionary
+        {
+            guard let jsonValue = jsonValue(from: value) else
+            {
+                return nil
+            }
+
+            object[key] = jsonValue
+        }
+
+        return object
+    }
+
+    static func jsonArray(from array: [Any]) -> [UUJsonValue]?
+    {
+        var values: [UUJsonValue] = []
+
+        for value in array
+        {
+            guard let jsonValue = jsonValue(from: value) else
+            {
+                return nil
+            }
+
+            values.append(jsonValue)
+        }
+
+        return values
+    }
+
+    static func jsonValue(from value: Any) -> UUJsonValue?
+    {
+        switch value
+        {
+            case _ as NSNull:
+                return .null
+
+            case let value as Bool:
+                return .bool(value)
+
+            case let value as String:
+                return .string(value)
+
+            case let value as NSNumber:
+                return .number(value.doubleValue)
+
+            case let value as [String: Any]:
+                guard let object = jsonObject(from: value) else
+                {
+                    return nil
+                }
+
+                return .object(object)
+
+            case let value as [Any]:
+                guard let array = jsonArray(from: value) else
+                {
+                    return nil
+                }
+
+                return .array(array)
+
+            default:
+                return nil
+        }
+    }
 }
 
 // MARK: - Header helpers
 
 /// JOSE header helpers for decoded JWT header dictionaries.
-public extension Dictionary where Key == AnyHashable, Value == Any
+public extension Dictionary where Key == String, Value == UUJsonValue
 {
     /// Returns the `kid` (key ID) JOSE header value when present.
     ///
     /// - Returns: The key identifier string, or `nil` when `kid` is absent or not a string.
     func uuJwtKeyID() -> String?
     {
-        self[UUJwtConstants.Header.keyID] as? String
+        self[UUJwtConstants.Header.keyID]?.stringValue
     }
 }
 

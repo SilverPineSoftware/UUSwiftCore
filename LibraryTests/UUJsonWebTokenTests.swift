@@ -75,6 +75,22 @@ private func XCTAssertParseFailure<T>(
 
 final class UUJwtErrorTests: XCTestCase
 {
+    func test_jwtTypes_areSendable()
+    {
+        func requireSendable<T: Sendable>(_ type: T.Type)
+        {
+        }
+
+        requireSendable(UUJwtConstants.self)
+        requireSendable(UUJwtConstants.Header.self)
+        requireSendable(UUJwtConstants.Claim.self)
+        requireSendable(UUJwtError.self)
+        requireSendable(UUJsonValue.self)
+        requireSendable(UUJsonWebToken.self)
+        requireSendable(UUSignedJsonWebToken.self)
+        requireSendable(UUEncryptedJsonWebToken.self)
+    }
+
     func test_errorDescription_isNonEmptyForAllCases()
     {
         let errors: [UUJwtError] = [
@@ -105,7 +121,7 @@ final class UUSignedJsonWebTokenTests: XCTestCase
                 XCTAssertEqual(token.algorithm, "HS256")
                 XCTAssertEqual(token.type, "JWT")
                 XCTAssertEqual(token.subject, "1234567890")
-                XCTAssertEqual(token.payload["name"] as? String, "John Doe")
+                XCTAssertEqual(token.payload["name"]?.stringValue, "John Doe")
                 XCTAssertEqual(token.issuedAt, Date(timeIntervalSince1970: 1_516_239_022))
                 XCTAssertFalse(token.signature.isEmpty)
 
@@ -253,11 +269,11 @@ final class UUSignedJsonWebTokenTests: XCTestCase
 
     func test_uuJwtKeyID_returnsNilForNonStringValue()
     {
-        let header: [AnyHashable: Any] = [UUJwtConstants.Header.keyID: 123]
+        let header: UUJsonObject = [UUJwtConstants.Header.keyID: .number(123)]
         XCTAssertNil(header.uuJwtKeyID())
     }
 
-    func test_claimAccessors_parseNumericDatesFromNSNumber()
+    func test_claimAccessors_parseNumericDates()
     {
         switch UUSignedJsonWebToken.parse(
             JwtTestVectors.signedToken(
