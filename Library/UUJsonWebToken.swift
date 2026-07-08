@@ -22,19 +22,11 @@ import Foundation
 // MARK: - Constants
 
 /// Standard JSON Web Token field names used by ``UUJsonWebToken`` and related APIs.
-public struct UUJwtConstants: Sendable
+public enum UUJwtConstants: Sendable
 {
-    private init()
-    {
-    }
-
     /// JOSE header parameter names (RFC 7515 / RFC 7516).
-    public struct Header: Sendable
+    public enum Header: Sendable
     {
-        private init()
-        {
-        }
-
         /// `alg` — cryptographic algorithm or key management algorithm.
         public static let algorithm = "alg"
 
@@ -49,12 +41,8 @@ public struct UUJwtConstants: Sendable
     }
 
     /// Registered JWT claims (RFC 7519).
-    public struct Claim: Sendable
+    public enum Claim: Sendable
     {
-        private init()
-        {
-        }
-
         /// `sub` — subject.
         public static let subject = "sub"
 
