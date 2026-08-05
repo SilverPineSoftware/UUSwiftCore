@@ -72,6 +72,7 @@
 		08A9B08B2FE2737A004423B9 /* LibraryTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LibraryTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		08A9B0BB2FE2739C004423B9 /* LibraryConnectedTestHost.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LibraryConnectedTestHost.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		08A9B0D32FE2C8FC004423B9 /* LibraryConnectedTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LibraryConnectedTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		08E414433023B70100BBA0F3 /* AGENTS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = AGENTS.md; sourceTree = "<group>"; };
 		C5361B0F26BA20E200EDA4AB /* UUSwiftCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = UUSwiftCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C5361B4526BA218F00EDA4AB /* Package.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		C5361B4626BA218F00EDA4AB /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
@@ -150,6 +151,7 @@
 		C5361B0526BA20E100EDA4AB = {
 			isa = PBXGroup;
 			children = (
+				08E414433023B70100BBA0F3 /* AGENTS.md */,
 				C5361B4726BA218F00EDA4AB /* LICENSE */,
 				C5361B4526BA218F00EDA4AB /* Package.swift */,
 				C5361B4626BA218F00EDA4AB /* README.md */,
