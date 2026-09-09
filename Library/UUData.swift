@@ -118,6 +118,23 @@ public extension Data
         return uuInteger(at: index)
     }
     
+    func uuUInt24(at index: Int) -> UInt32?
+    {
+        guard let byteOne = uuUInt8(at: index),
+              let byteTwo = uuUInt8(at: index + 1),
+              let byteThree = uuUInt8(at: index + 2)
+        else
+        {
+            return nil
+        }
+        
+        let part1 = (UInt32(byteOne) & 0x000000FF)
+        let part2 = (UInt32(byteTwo) << 8) & 0x0000FF00
+        let part3 = (UInt32(byteThree) << 16) & 0x00FF0000
+        
+        return (part1 | part2 | part3)
+    }
+    
     func uuUInt32(at index: Int) -> UInt32?
     {
         return uuInteger(at: index)

@@ -263,6 +263,28 @@ class UUDataTests: XCTestCase
         do_uuUInt16AtIndex_test(bytes, index: 20, expected: 0x8000)
     }
     
+    // MARK: uuUInt24(at:count)
+    
+    private func do_uuUInt24AtIndex_test(_ bytes: [UInt8], index: Int, expected: UInt32)
+    {
+        let input = Data(bytes: bytes, count: bytes.count)
+        let actual = input.uuUInt24(at: index)
+        XCTAssertEqual(actual, expected)
+    }
+    
+    func test_uuUInt24AtIndex()
+    {
+        let bytes: [UInt8] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF, 0xFF, 0xFF, 0xFF, 0x7F, 0x00, 0x80]
+        do_uuUInt24AtIndex_test(bytes, index: 0, expected: 0x020100)
+        do_uuUInt24AtIndex_test(bytes, index: 1, expected: 0x030201)
+        do_uuUInt24AtIndex_test(bytes, index: 2, expected: 0x040302)
+        do_uuUInt24AtIndex_test(bytes, index: 14, expected: 0xFF0F0E)
+        do_uuUInt24AtIndex_test(bytes, index: 10, expected: 0x0C0B0A)
+        do_uuUInt24AtIndex_test(bytes, index: 16, expected: 0xFFFFFF)
+        do_uuUInt24AtIndex_test(bytes, index: 18, expected: 0x007FFF)
+        do_uuUInt24AtIndex_test(bytes, index: 19, expected: 0x80007F)
+    }
+    
     // MARK: uuUInt32(at:count)
     
     private func do_uuUInt32AtIndex_test(_ bytes: [UInt8], index: Int, expected: UInt32)
