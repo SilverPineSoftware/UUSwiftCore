@@ -11,6 +11,12 @@ import CryptoKit
 
 fileprivate let LOG_TAG : String = "UUData"
 
+public enum UUByteOrder
+{
+    case littleEndian
+    case bigEndian
+}
+
 public extension Data
 {
     // Return hex string representation of data
@@ -19,12 +25,9 @@ public extension Data
     {
         let sb : NSMutableString = NSMutableString()
         
-        if (self.count > 0)
+        for byte in self
         {
-            for index in 0...(self.count - 1)
-            {
-                sb.appendFormat("%02X", self[index])
-            }
+            sb.appendFormat("%02X", byte)
         }
         
         return sb as String
@@ -58,8 +61,21 @@ public extension Data
     //
     func uuToJsonString() -> String
     {
-        let json = uuToJson()
-        return String(format: "%@", (json as? CVarArg) ?? "")
+        guard let json = uuToJson() else
+        {
+            return ""
+        }
+
+        do
+        {
+            let data = try JSONSerialization.data(withJSONObject: json, options: [])
+            return String(decoding: data, as: UTF8.self)
+        }
+        catch
+        {
+            UULog.error(tag: LOG_TAG, message: "Error serializing JSON: \(error)")
+            return ""
+        }
     }
     
     /**
@@ -78,24 +94,23 @@ public extension Data
         return [UInt8](self)
     }
     
+    /// Reads bytes at a relative offset from the beginning, including for sliced Data.
+    /// Truncates the requested count to the available bytes. Returns nil for negative
+    /// counts or offsets outside 0...count; an offset at the end returns empty Data.
     func uuData(at index: Int, count: Int) -> Data?
     {
-        guard index >= 0 else
+        guard index >= 0, index <= self.count, count >= 0 else
         {
             return nil
         }
-        
-        let upperIndex = ((index + count) > self.count) ? self.count : index + count
-        
-        guard index <= upperIndex else
-        {
-            return nil
-        }
-        
-        return subdata(in: index..<upperIndex)
+
+        let length = Swift.min(count, self.count - index)
+        let lowerIndex = self.index(startIndex, offsetBy: index)
+        let upperIndex = self.index(lowerIndex, offsetBy: length)
+        return subdata(in: lowerIndex..<upperIndex)
     }
-    
-    func uuInteger<T: FixedWidthInteger>(at index: Int) -> T?
+
+    func uuInteger<T: FixedWidthInteger>(order: UUByteOrder, at index: Int) -> T?
     {
         let size = MemoryLayout<T>.size
         guard let subData = uuData(at: index, count: size),
@@ -105,64 +120,94 @@ public extension Data
             return nil
         }
         
-        return subData.withUnsafeBytes{ $0.load(as: T.self) }
+        let rawValue = subData.withUnsafeBytes{ $0.loadUnaligned(as: T.self) }
+        
+        switch order
+        {
+            case .bigEndian:
+                return T(bigEndian: rawValue)
+
+            case .littleEndian:
+                return T(littleEndian: rawValue)
+        }
     }
     
+    /// Reads one byte at a relative offset, returning nil when out of bounds.
     func uuUInt8(at index: Int) -> UInt8?
     {
-        return uuInteger(at: index)
+        guard index >= 0, index < count else
+        {
+            return nil
+        }
+
+        return self[self.index(startIndex, offsetBy: index)]
+    }
+
+    func uuUInt16(order: UUByteOrder, at index: Int) -> UInt16?
+    {
+        return uuInteger(order: order, at: index)
     }
     
-    func uuUInt16(at index: Int) -> UInt16?
+    func uuUInt24(order: UUByteOrder, at index: Int) -> UInt32?
     {
-        return uuInteger(at: index)
-    }
-    
-    func uuUInt24(at index: Int) -> UInt32?
-    {
-        guard let byteOne = uuUInt8(at: index),
-              let byteTwo = uuUInt8(at: index + 1),
-              let byteThree = uuUInt8(at: index + 2)
-        else
+        guard let bytes = uuData(at: index, count: 3)?.uuBytes, bytes.count == 3 else
         {
             return nil
         }
         
-        let part1 = (UInt32(byteOne) & 0x000000FF)
-        let part2 = (UInt32(byteTwo) << 8) & 0x0000FF00
-        let part3 = (UInt32(byteThree) << 16) & 0x00FF0000
+        let byteOne = bytes[0]
+        let byteTwo = bytes[1]
+        let byteThree = bytes[2]
         
-        return (part1 | part2 | part3)
+        switch (order)
+        {
+            case .littleEndian:
+                let part1 = (UInt32(byteOne) & 0x000000FF)
+                let part2 = (UInt32(byteTwo) << 8) & 0x0000FF00
+                let part3 = (UInt32(byteThree) << 16) & 0x00FF0000
+                
+                return (part1 | part2 | part3)
+                
+            case .bigEndian:
+            
+                let part1 = (UInt32(byteThree) & 0x000000FF)
+                let part2 = (UInt32(byteTwo) << 8) & 0x0000FF00
+                let part3 = (UInt32(byteOne) << 16) & 0x00FF0000
+                
+                return (part1 | part2 | part3)
+                
+        }
     }
     
-    func uuUInt32(at index: Int) -> UInt32?
+    func uuUInt32(order: UUByteOrder, at index: Int) -> UInt32?
     {
-        return uuInteger(at: index)
+        return uuInteger(order: order, at: index)
     }
     
-    func uuUInt64(at index: Int) -> UInt64?
+    func uuUInt64(order: UUByteOrder, at index: Int) -> UInt64?
     {
-        return uuInteger(at: index)
+        return uuInteger(order: order, at: index)
     }
     
+    /// Reads one byte at a relative offset and interprets its bits as a signed integer.
     func uuInt8(at index: Int) -> Int8?
     {
-        return uuInteger(at: index)
+        return uuUInt8(at: index).map { Int8(bitPattern: $0) }
+    }
+
+    func uuInt16(order: UUByteOrder, at index: Int) -> Int16?
+    {
+        return uuInteger(order: order, at: index)
     }
     
-    func uuInt16(at index: Int) -> Int16?
+    func uuInt32(order: UUByteOrder, at index: Int) -> Int32?
     {
-        return uuInteger(at: index)
+        return uuInteger(order: order, at: index)
     }
     
-    func uuInt32(at index: Int) -> Int32?
+    func uuInt64(order: UUByteOrder, at index: Int) -> Int64?
     {
-        return uuInteger(at: index)
-    }
-    
-    func uuInt64(at index: Int) -> Int64?
-    {
-        return uuInteger(at: index)
+        return uuInteger(order: order, at: index)
     }
     
     func uuString(at index: Int, count: Int, with encoding: String.Encoding) -> String?
@@ -225,17 +270,12 @@ public extension Data
     /// - Returns: A new Data containing the XOR result.
     func uuXor(with other: Data) -> Data
     {
-        var buffer = Data(self)
-        
-        if (buffer.count == other.count)
+        guard count == other.count else
         {
-            for i in self.indices
-            {
-                buffer.uuReplace(UInt8(self[i] ^ other[i]), at: i)
-            }
+            return Data(self)
         }
-        
-        return buffer
+
+        return Data(zip(self, other).map { $0 ^ $1 })
     }
     
     // MARK: Safe gettors
@@ -247,42 +287,42 @@ public extension Data
     
     func uuSafeUInt8(at index: Int, defaultValue: UInt8 = 0) -> UInt8
     {
-        return uuInteger(at: index) ?? defaultValue
+        return uuUInt8(at: index) ?? defaultValue
     }
     
-    func uuSafeUInt16(at index: Int, defaultValue: UInt16 = 0) -> UInt16
+    func uuSafeUInt16(order: UUByteOrder, at index: Int, defaultValue: UInt16 = 0) -> UInt16
     {
-        return uuInteger(at: index) ?? defaultValue
+        return uuInteger(order: order, at: index) ?? defaultValue
     }
     
-    func uuSafeUInt32(at index: Int, defaultValue: UInt32 = 0) -> UInt32
+    func uuSafeUInt32(order: UUByteOrder, at index: Int, defaultValue: UInt32 = 0) -> UInt32
     {
-        return uuInteger(at: index) ?? defaultValue
+        return uuInteger(order: order, at: index) ?? defaultValue
     }
     
-    func uuSafeUInt64(at index: Int, defaultValue: UInt64 = 0) -> UInt64
+    func uuSafeUInt64(order: UUByteOrder, at index: Int, defaultValue: UInt64 = 0) -> UInt64
     {
-        return uuInteger(at: index) ?? defaultValue
+        return uuInteger(order: order, at: index) ?? defaultValue
     }
     
     func uuSafeInt8(at index: Int, defaultValue: Int8 = 0) -> Int8
     {
-        return uuInteger(at: index) ?? defaultValue
+        return uuInt8(at: index) ?? defaultValue
     }
     
-    func uuSafeInt16(at index: Int, defaultValue: Int16 = 0) -> Int16
+    func uuSafeInt16(order: UUByteOrder, at index: Int, defaultValue: Int16 = 0) -> Int16
     {
-        return uuInteger(at: index) ?? defaultValue
+        return uuInteger(order: order, at: index) ?? defaultValue
     }
     
-    func uuSafeInt32(at index: Int, defaultValue: Int32 = 0) -> Int32
+    func uuSafeInt32(order: UUByteOrder, at index: Int, defaultValue: Int32 = 0) -> Int32
     {
-        return uuInteger(at: index) ?? defaultValue
+        return uuInteger(order: order, at: index) ?? defaultValue
     }
     
-    func uuSafeInt64(at index: Int, defaultValue: Int64 = 0) -> Int64
+    func uuSafeInt64(order: UUByteOrder, at index: Int, defaultValue: Int64 = 0) -> Int64
     {
-        return uuInteger(at: index) ?? defaultValue
+        return uuInteger(order: order, at: index) ?? defaultValue
     }
     
     func uuSafeString(at index: Int, count: Int, with encoding: String.Encoding, defaultValue: String = "") -> String
@@ -305,34 +345,39 @@ public extension Data
         }
     }
     
+    /// Replaces an integer at a relative byte offset; the entire value must fit.
     mutating func uuReplace<T: FixedWidthInteger>(_ value: T, at index: Int)
     {
         Swift.withUnsafeBytes(of: value)
         { buffer in
-            replaceSubrange(index..<(index+buffer.count), with: buffer)
+            precondition(index >= 0 && index <= count && buffer.count <= count - index,
+                         "Replacement must fit within the data")
+            let lowerIndex = self.index(startIndex, offsetBy: index)
+            let upperIndex = self.index(lowerIndex, offsetBy: buffer.count)
+            replaceSubrange(lowerIndex..<upperIndex, with: buffer)
         }
     }
     
     /// Sets every byte in this `Data` instance to zero.
     ///
     /// This method uses `resetBytes(in:)` to overwrite all bytes
-    /// in the range `0..<count` with `0x00`. After calling this,
+    /// in the range `startIndex..<endIndex` with `0x00`. After calling this,
     /// the entire buffer is cleared.
     mutating func uuReset()
     {
-        resetBytes(in: 0..<self.count)
+        resetBytes(in: startIndex..<endIndex)
     }
 
     /// Sets every byte in this `Data` instance to a specified value.
     ///
     /// - Parameter value: The `UInt8` value to write into each byte.
     ///
-    /// This method replaces the entire contents of `self` (range `0..<count`)
+    /// This method replaces the entire contents of `self` (range `startIndex..<endIndex`)
     /// with a sequence of `count` copies of `value`. After calling this,
     /// every byte in the buffer will equal `value`.
     mutating func uuSetAll(to value: UInt8)
     {
-        replaceSubrange(0..<self.count, with: repeatElement(value, count: self.count))
+        replaceSubrange(startIndex..<endIndex, with: repeatElement(value, count: self.count))
     }
     
     // MARK: Nibble Support
@@ -406,8 +451,14 @@ public extension Data
         return (UInt32(data1) * 10000) + UInt32(data2)
     }
     
+    /// Splits into chunks, retaining a shorter final chunk. Nonpositive sizes return no chunks.
     func uuSlice(chunkSize: Int) -> [Data]
     {
+        guard chunkSize > 0 else
+        {
+            return []
+        }
+
         var chunks: [Data] = []
         
         var index = 0
@@ -419,7 +470,7 @@ public extension Data
                 chunks.append(chunk)
             }
             
-            index += chunkSize
+            index += Swift.min(chunkSize, count - index)
         }
         
         return chunks   
