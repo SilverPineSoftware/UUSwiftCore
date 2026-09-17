@@ -350,13 +350,33 @@ public extension Data
     
     // MARK: Mutating Functions
     
-    /// Appends the integer's bytes in native byte order.
-    /// Pass `value.littleEndian` or `value.bigEndian` when writing a defined binary format.
-    mutating func uuAppend<T: FixedWidthInteger>(_ value: T)
+    /// Appends a single unsigned byte. Byte order does not apply.
+    mutating func uuAppend(_ value: UInt8)
     {
-        Swift.withUnsafeBytes(of: value, { append(contentsOf: $0) })
+        append(value)
     }
-    
+
+    /// Appends a single signed byte, preserving its bit pattern.
+    mutating func uuAppend(_ value: Int8)
+    {
+        append(UInt8(bitPattern: value))
+    }
+
+    /// Appends the integer in the specified byte order, growing the data by its byte size.
+    /// Pass the original value; this method performs the endian conversion.
+    mutating func uuAppend<T: FixedWidthInteger>(_ value: T, order: UUByteOrder)
+    {
+        let orderedValue: T
+        switch order
+        {
+            case .littleEndian:
+                orderedValue = value.littleEndian
+            case .bigEndian:
+                orderedValue = value.bigEndian
+        }
+        Swift.withUnsafeBytes(of: orderedValue, { append(contentsOf: $0) })
+    }
+
     /// Appends the encoded string. Nil values and encoding failures leave the data unchanged.
     mutating func uuAppend(_ value: String?, encoding: String.Encoding = .utf8)
     {
