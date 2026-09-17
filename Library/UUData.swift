@@ -17,6 +17,15 @@ public enum UUByteOrder
     case bigEndian
 }
 
+/// Validation failures from Data padding and replacement operations.
+public enum UUDataError: Error, Equatable, Sendable
+{
+    case invalidLength(Int)
+    case invalidBlockSize(Int)
+    case replacementOutOfBounds(index: Int, byteCount: Int, dataCount: Int)
+    case paddedLengthOverflow
+}
+
 public extension Data
 {
     // Return hex string representation of data
@@ -57,8 +66,8 @@ public extension Data
         return nil
     }
     
-    // Returns JSON string representation of the data
-    //
+    /// Validates and reserializes a JSON object or array as UTF-8 text.
+    /// Formatting and key order may change. Returns an empty string on failure.
     func uuToJsonString() -> String
     {
         guard let json = uuToJson() else
@@ -87,7 +96,7 @@ public extension Data
     }
     
     /**
-     Casts the data object to a raw byte array
+     Creates a byte array containing the data
      */
     var uuBytes: [UInt8]
     {
@@ -96,7 +105,7 @@ public extension Data
     
     /// Reads bytes at a relative offset from the beginning, including for sliced Data.
     /// Truncates the requested count to the available bytes. Returns nil for negative
-    /// counts or offsets outside 0...count; an offset at the end returns empty Data.
+    /// counts or offsets outside `0...self.count`; an offset at the end returns empty Data.
     func uuData(at index: Int, count: Int) -> Data?
     {
         guard index >= 0, index <= self.count, count >= 0 else
@@ -110,17 +119,20 @@ public extension Data
         return subdata(in: lowerIndex..<upperIndex)
     }
 
+    /// Reads an integer at a relative byte offset using the specified byte order.
+    /// Returns nil if the offset is invalid or the complete value is unavailable.
     func uuInteger<T: FixedWidthInteger>(order: UUByteOrder, at index: Int) -> T?
     {
         let size = MemoryLayout<T>.size
-        guard let subData = uuData(at: index, count: size),
-              !subData.isEmpty,
-              subData.count >= size else
+        guard index >= 0, index <= count, size <= count - index else
         {
             return nil
         }
         
-        let rawValue = subData.withUnsafeBytes{ $0.loadUnaligned(as: T.self) }
+        let rawValue = withUnsafeBytes
+        {
+            $0.loadUnaligned(fromByteOffset: index, as: T.self)
+        }
         
         switch order
         {
@@ -148,37 +160,29 @@ public extension Data
         return uuInteger(order: order, at: index)
     }
     
+    /// Reads three bytes at a relative offset, returning nil if fewer are available.
     func uuUInt24(order: UUByteOrder, at index: Int) -> UInt32?
     {
-        guard let bytes = uuData(at: index, count: 3)?.uuBytes, bytes.count == 3 else
+        guard index >= 0, index <= count, 3 <= count - index else
         {
             return nil
         }
-        
-        let byteOne = bytes[0]
-        let byteTwo = bytes[1]
-        let byteThree = bytes[2]
-        
-        switch (order)
+
+        let firstIndex = self.index(startIndex, offsetBy: index)
+        let first = UInt32(self[firstIndex])
+        let second = UInt32(self[self.index(firstIndex, offsetBy: 1)])
+        let third = UInt32(self[self.index(firstIndex, offsetBy: 2)])
+
+        switch order
         {
             case .littleEndian:
-                let part1 = (UInt32(byteOne) & 0x000000FF)
-                let part2 = (UInt32(byteTwo) << 8) & 0x0000FF00
-                let part3 = (UInt32(byteThree) << 16) & 0x00FF0000
-                
-                return (part1 | part2 | part3)
-                
+                return first | (second << 8) | (third << 16)
+
             case .bigEndian:
-            
-                let part1 = (UInt32(byteThree) & 0x000000FF)
-                let part2 = (UInt32(byteTwo) << 8) & 0x0000FF00
-                let part3 = (UInt32(byteOne) << 16) & 0x00FF0000
-                
-                return (part1 | part2 | part3)
-                
+                return (first << 16) | (second << 8) | third
         }
     }
-    
+
     func uuUInt32(order: UUByteOrder, at index: Int) -> UInt32?
     {
         return uuInteger(order: order, at: index)
@@ -224,20 +228,25 @@ public extension Data
     /// padding with 0x00 bytes on the right if needed, or truncating
     /// if self.count > toLength.
     ///
-    /// - Parameter toLength: Desired total length.
-    /// - Returns: A Data of length `toLength`.
-    func uuPadded(toLength: Int) -> Data
+    /// - Parameter toLength: Desired total length (must be >= 0).
+    /// - Returns: The padded data, or a failure for a negative length.
+    func uuPadded(toLength: Int) -> Result<Data, Error>
     {
+        guard toLength >= 0 else
+        {
+            return .failure(UUDataError.invalidLength(toLength))
+        }
+
         // If already longer, just truncate:
         if count >= toLength
         {
-            return self.prefix(toLength)
+            return .success(Data(self.prefix(toLength)))
         }
         
         // Otherwise, append zero bytes:
         var result = self
         result.append(Data(count: toLength - count))
-        return result
+        return .success(result)
     }
     
     /// Returns a new `Data` whose length is padded with 0x00 bytes
@@ -245,26 +254,35 @@ public extension Data
     /// a multiple of `blockSize`, returns `self` unchanged.
     ///
     /// - Parameter blockSize: The block size to pad to (must be > 0).
-    /// - Returns: A `Data` object whose length is a multiple of `blockSize`.
-    func uuPadded(toBlockSize blockSize: Int) -> Data
+    /// - Returns: The padded data, or a failure for a nonpositive block size or length overflow.
+    func uuPadded(toBlockSize blockSize: Int) -> Result<Data, Error>
     {
+        guard blockSize > 0 else
+        {
+            return .failure(UUDataError.invalidBlockSize(blockSize))
+        }
+
         let remainder = count % blockSize
         
         // If already aligned, no padding needed
         guard remainder != 0 else
         {
-            return self
+            return .success(self)
         }
         
         // Number of zero bytes to append
         let padCount = blockSize - remainder
+        guard padCount <= Int.max - count else
+        {
+            return .failure(UUDataError.paddedLengthOverflow)
+        }
         var result = self
         result.append(Data(count: padCount))
-        return result
+        return .success(result)
     }
     
     /// Returns a new `Data` where each byte is the XOR of the corresponding bytes
-    /// in `self` and `other`. Both Data objects must be the same length.
+    /// in `self` and `other`. If their lengths differ, returns the original bytes unchanged.
     ///
     /// - Parameter other: The Data to XOR against.
     /// - Returns: A new Data containing the XOR result.
@@ -278,7 +296,7 @@ public extension Data
         return Data(zip(self, other).map { $0 ^ $1 })
     }
     
-    // MARK: Safe gettors
+    // MARK: Safe getters
     
     func uuSafeData(at index: Int, count: Int) -> Data
     {
@@ -332,11 +350,14 @@ public extension Data
     
     // MARK: Mutating Functions
     
+    /// Appends the integer's bytes in native byte order.
+    /// Pass `value.littleEndian` or `value.bigEndian` when writing a defined binary format.
     mutating func uuAppend<T: FixedWidthInteger>(_ value: T)
     {
         Swift.withUnsafeBytes(of: value, { append(contentsOf: $0) })
     }
     
+    /// Appends the encoded string. Nil values and encoding failures leave the data unchanged.
     mutating func uuAppend(_ value: String?, encoding: String.Encoding = .utf8)
     {
         if let actual = value, let data = actual.data(using: encoding)
@@ -345,19 +366,27 @@ public extension Data
         }
     }
     
-    /// Replaces an integer at a relative byte offset; the entire value must fit.
-    mutating func uuReplace<T: FixedWidthInteger>(_ value: T, at index: Int)
+    /// Replaces an integer at a relative byte offset, returning failure if it does not fit.
+    /// On failure, the data is unchanged.
+    /// Writes native byte order. Pass `value.littleEndian` or `value.bigEndian`
+    /// when writing a defined binary format.
+    mutating func uuReplace<T: FixedWidthInteger>(_ value: T, at index: Int) -> Result<Void, Error>
     {
+        let size = MemoryLayout<T>.size
+        guard index >= 0, index <= count, size <= count - index else
+        {
+            return .failure(UUDataError.replacementOutOfBounds(index: index, byteCount: size, dataCount: count))
+        }
+
         Swift.withUnsafeBytes(of: value)
         { buffer in
-            precondition(index >= 0 && index <= count && buffer.count <= count - index,
-                         "Replacement must fit within the data")
             let lowerIndex = self.index(startIndex, offsetBy: index)
             let upperIndex = self.index(lowerIndex, offsetBy: buffer.count)
             replaceSubrange(lowerIndex..<upperIndex, with: buffer)
         }
+        return .success(())
     }
-    
+
     /// Sets every byte in this `Data` instance to zero.
     ///
     /// This method uses `resetBytes(in:)` to overwrite all bytes
@@ -384,39 +413,33 @@ public extension Data
     
     func uuHighNibble(at index: Int) -> UInt8?
     {
-        guard let data = self.uuUInt8(at: index) else
-        {
-            return nil
-        }
-        
-        return ((data & 0xF0) >> 4)
+        return uuUInt8(at: index).map { $0 >> 4 }
     }
-    
+
     func uuLowNibble(at index: Int) -> UInt8?
     {
-        guard let data = self.uuUInt8(at: index) else
-        {
-            return nil
-        }
-        
-        return ((data & 0x0F) >> 0)
+        return uuUInt8(at: index).map { $0 & 0x0F }
     }
-    
+
     // MARK: BCD Support
-    
-    func uuBCD8(at index: Int ) -> UInt8?
+
+    func uuBCD8(at index: Int) -> UInt8?
     {
-        guard let highNibble = uuHighNibble(at: index),
-              highNibble <= 9,
-              let lowNibble = uuLowNibble(at: index),
-              lowNibble <= 9 else
+        guard let byte = uuUInt8(at: index) else
         {
             return nil
         }
-        
+
+        let highNibble = byte >> 4
+        let lowNibble = byte & 0x0F
+        guard highNibble <= 9, lowNibble <= 9 else
+        {
+            return nil
+        }
+
         return (highNibble * 10) + lowNibble
     }
-    
+
     func uuBCD16(at index: Int) -> UInt16?
     {
         guard let data1 = uuBCD8(at: index),

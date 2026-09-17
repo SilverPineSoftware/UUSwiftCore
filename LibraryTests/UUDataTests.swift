@@ -621,7 +621,7 @@ class UUDataTests: XCTestCase
         XCTAssertNotNil(input)
         
         let countBefore = input.count
-        input.uuReplace(data, at: index)
+        XCTAssertNoThrow(try input.uuReplace(data, at: index).get())
         let countAfter = input.count
         
         XCTAssertEqual(countAfter, countBefore)
@@ -845,7 +845,7 @@ class UUDataTests: XCTestCase
         {
             let input = try XCTUnwrap(td.0.uuToHexData() as Data?)
             
-            let actual = input.uuPadded(toLength: td.1)
+            let actual = try input.uuPadded(toLength: td.1).get()
             let actualHex = actual.uuToHexString()
             XCTAssertEqual(td.2, actualHex)
         }
@@ -864,7 +864,7 @@ class UUDataTests: XCTestCase
         {
             let input = try XCTUnwrap(td.0.uuToHexData() as Data?)
             
-            let actual = input.uuPadded(toBlockSize: td.1)
+            let actual = try input.uuPadded(toBlockSize: td.1).get()
             let actualHex = actual.uuToHexString()
             XCTAssertEqual(td.2, actualHex)
         }
@@ -1402,18 +1402,17 @@ class UUDataTests: XCTestCase
         XCTAssertEqual(Data([1]).uuSlice(chunkSize: -1), [])
     }
 
-    func test_uuPadded_emptyZeroAndMultipleBlocks()
+    func test_uuPadded_emptyZeroAndMultipleBlocks() throws
     {
-        XCTAssertEqual(Data().uuPadded(toLength: 0), Data())
-        XCTAssertEqual(Data().uuPadded(toLength: 3), Data([0, 0, 0]))
-        XCTAssertEqual(Data([1, 2]).uuPadded(toLength: 0), Data())
-        XCTAssertEqual(Data().uuPadded(toBlockSize: 4), Data())
-        XCTAssertEqual(Data([1, 2]).uuPadded(toBlockSize: 1), Data([1, 2]))
+        XCTAssertEqual(try Data().uuPadded(toLength: 0).get(), Data())
+        XCTAssertEqual(try Data().uuPadded(toLength: 3).get(), Data([0, 0, 0]))
+        XCTAssertEqual(try Data([1, 2]).uuPadded(toLength: 0).get(), Data())
+        XCTAssertEqual(try Data().uuPadded(toBlockSize: 4).get(), Data())
+        XCTAssertEqual(try Data([1, 2]).uuPadded(toBlockSize: 1).get(), Data([1, 2]))
         let input = Data([1, 2, 3, 4, 5])
-        XCTAssertEqual(input.uuPadded(toBlockSize: 4), Data([1, 2, 3, 4, 5, 0, 0, 0]))
-        XCTAssertEqual(Data([1, 2, 3, 4]).uuPadded(toBlockSize: 2), Data([1, 2, 3, 4]))
+        XCTAssertEqual(try input.uuPadded(toBlockSize: 4).get(), Data([1, 2, 3, 4, 5, 0, 0, 0]))
+        XCTAssertEqual(try Data([1, 2, 3, 4]).uuPadded(toBlockSize: 2).get(), Data([1, 2, 3, 4]))
         XCTAssertEqual(input, Data([1, 2, 3, 4, 5]))
-        // Nonpositive block sizes violate the documented precondition; no return value is asserted.
     }
 
     func test_uuXor_emptySelfAndPreservesInputs()
@@ -1486,16 +1485,16 @@ class UUDataTests: XCTestCase
         XCTAssertEqual(Data("invalid".utf8).uuToJsonString(), "")
     }
 
-    func test_uuSlicedData_valueOperations()
+    func test_uuSlicedData_valueOperations() throws
     {
         let input = Data([0xFF, 0x12, 0x34, 0x56]).dropFirst()
         XCTAssertEqual(input.startIndex, 1)
         XCTAssertEqual(input.uuBytes, [0x12, 0x34, 0x56])
         XCTAssertEqual(input.uuReversed(), Data([0x56, 0x34, 0x12]))
         XCTAssertEqual(input.uuToBinaryString(), "00010010 00110100 01010110")
-        XCTAssertEqual(input.uuPadded(toLength: 2), Data([0x12, 0x34]))
-        XCTAssertEqual(input.uuPadded(toLength: 4), Data([0x12, 0x34, 0x56, 0]))
-        XCTAssertEqual(input.uuPadded(toBlockSize: 2), Data([0x12, 0x34, 0x56, 0]))
+        XCTAssertEqual(try input.uuPadded(toLength: 2).get(), Data([0x12, 0x34]))
+        XCTAssertEqual(try input.uuPadded(toLength: 4).get(), Data([0x12, 0x34, 0x56, 0]))
+        XCTAssertEqual(try input.uuPadded(toBlockSize: 2).get(), Data([0x12, 0x34, 0x56, 0]))
         XCTAssertEqual(input.uuSha256(), Data([0x12, 0x34, 0x56]).uuSha256())
         XCTAssertEqual(input.uuSha384(), Data([0x12, 0x34, 0x56]).uuSha384())
         XCTAssertEqual(input.uuSha512(), Data([0x12, 0x34, 0x56]).uuSha512())
@@ -1603,7 +1602,7 @@ class UUDataTests: XCTestCase
     {
         let original = Data([9, 1, 2, 3, 4])
         var input = original.dropFirst()
-        input.uuReplace(UInt16(0xABCD).bigEndian, at: 2)
+        XCTAssertNoThrow(try input.uuReplace(UInt16(0xABCD).bigEndian, at: 2).get())
         XCTAssertEqual(input, Data([1, 2, 0xAB, 0xCD]))
         XCTAssertEqual(original, Data([9, 1, 2, 3, 4]))
     }
@@ -1630,6 +1629,73 @@ class UUDataTests: XCTestCase
                 XCTAssertNil(input.uuInt8(at: offset))
                 XCTAssertEqual(input.uuSafeUInt8(at: offset, defaultValue: 42), 42)
                 XCTAssertEqual(input.uuSafeInt8(at: offset, defaultValue: -42), -42)
+            }
+        }
+    }
+    func test_uuDirectIntegerReaders_slicedOffsetsAndExtremeIndices()
+    {
+        let input = Data([0xFF, 0xAA, 0x12, 0x34, 0x56, 0x78]).dropFirst()
+        XCTAssertEqual(input.startIndex, 1)
+        XCTAssertEqual(input.uuUInt16(order: .bigEndian, at: 1), 0x1234)
+        XCTAssertEqual(input.uuUInt24(order: .bigEndian, at: 1), 0x123456)
+        XCTAssertEqual(input.uuUInt24(order: .littleEndian, at: 1), 0x563412)
+        XCTAssertEqual(input.uuUInt32(order: .bigEndian, at: 1), 0x12345678)
+        XCTAssertEqual(input.uuUInt32(order: .littleEndian, at: 1), 0x78563412)
+        for index in [Int.min, Int.max, -1, input.count]
+        {
+            for order in [UUByteOrder.littleEndian, .bigEndian]
+            {
+                XCTAssertNil(input.uuUInt24(order: order, at: index))
+                let actual: UInt32? = input.uuInteger(order: order, at: index)
+                XCTAssertNil(actual)
+            }
+        }
+    }
+
+    func test_uuBCD8_allByteValues()
+    {
+        for value in 0...255
+        {
+            let tens = value / 16
+            let ones = value % 16
+            let expected: UInt8? = tens < 10 && ones < 10 ? UInt8(tens * 10 + ones) : nil
+            XCTAssertEqual(Data([UInt8(value)]).uuBCD8(at: 0), expected, "byte: \(value)")
+        }
+    }
+    func test_uuPadding_invalidArgumentsReturnFailure()
+    {
+        for input in [Data(), Data([1, 2, 3])]
+        {
+            for length in [-1, Int.min]
+            {
+                XCTAssertThrowsError(try input.uuPadded(toLength: length).get())
+                {
+                    XCTAssertEqual($0 as? UUDataError, .invalidLength(length))
+                }
+            }
+            for blockSize in [0, -1, Int.min]
+            {
+                XCTAssertThrowsError(try input.uuPadded(toBlockSize: blockSize).get())
+                {
+                    XCTAssertEqual($0 as? UUDataError, .invalidBlockSize(blockSize))
+                }
+            }
+        }
+    }
+
+    func test_uuReplace_invalidRangesReturnFailureWithoutMutation()
+    {
+        for original in [Data(), Data([1, 2, 3]), Data([9, 1, 2, 3]).dropFirst()]
+        {
+            for offset in [Int.min, -1, original.count - 1, original.count, Int.max]
+            {
+                var input = original
+                XCTAssertThrowsError(try input.uuReplace(UInt16(0x1234), at: offset).get())
+                {
+                    XCTAssertEqual($0 as? UUDataError,
+                                   .replacementOutOfBounds(index: offset, byteCount: 2, dataCount: original.count))
+                }
+                XCTAssertEqual(input, original)
             }
         }
     }
